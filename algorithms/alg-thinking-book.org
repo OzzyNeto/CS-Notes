@@ -1,0 +1,15 @@
+#+TITLE: Algorithmic Thinking: A Problem-Based Introduction (Book Notes)
+#+AUTHOR: Osvaldo Neto
+
+* Hash Tables
+** Problem 1: Unique Snowflakes
+*** Reading the Input
+- We make the snowflakes array a _static_ array.
+- The static keyword places the array in its own, separate piece of memory, where space is not a concern.
+  + This is good to do for huge arrays.
+- Note that static local variables are only initialized once.
+*** Diagnosing the Problem
+- We can think of today's computers as being able to perform 30 million steps per second.
+  + This is a conservatice estimate.
+*** Sorting Snowflakes
+-

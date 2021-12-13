@@ -1,0 +1,888 @@
+#+TITLE: Operating System Design - Rutgers FALL2020 Notes
+
+* Computer Architecture and Assembly
+** Bits, Bytes, Kilobytes, Megabytes, Gigabytes, Terabytes
+[[youtube:u4P0LOofEFs][Video Link]]
+***
+
+* C Programming
+** C Review
+
+** Strings in C
+*** Basics
+- Strings in C are sequences of characters contiguously stored.
+  + NOT a native type (like int or float) like in some higher level languages.
+- A "string" terminates with the null character: \0
+- That's pretty much it! Any further programmatic use of strings requires functions that work with this format.
+*** Displaying C Strings with Formatted Printing
+- Fromatted printing is done with:
+  + printf()  - Prints to standard output
+  + sprintf() - Prints to a string (a char array)
+  + fprintf() - Prints to a file
+- All these functions look for null terminators to know when to stop.
+*** Basic C String Functions
+- Use the string library functions:
+  + strcmp() - Compares two strings for equality. WARNING: Do not use the == operator!
+  + strlen() - Returns the length of the string in characters, NOT including the null terminator.
+  + strcpy() - Copies one string into another.
+  + strcat() - Returns one string that is a concatenation of itself with another string.
+*** Declaring C Strings
+- Three Ways of Declaring:
+  1. char* mystring     = "my string";
+     - At compile time, creates a sequence of bytes in the read-only initialized data segment portion of memory with the contents "my string".
+     - During execution, creates a pointer on the stack (automatic variable) called mystring that points to the read-only sequence of characters in the data segment.
+     - mystring can be pointed to other addresses (it doesn't hold chars by itself, as it's a pointer).
+     - You can't modify the string in read-only memory because it's out of the scope of your program. If you try doing say mystring[3] = 'Q', you'll get a segmentation fault error.
+       + This error only gets caught at run-time; it compiles just fine.
+  2. char  mystring[]   = "my string";
+     - During execution, creates space for 10 bytes on the stack as an automatic variable, names that variable mystring.
+     - Puts "my string" into the variable mystring with a null terminator after it.
+     - The variable mystring is editable, as it is simply an array.
+  3. char  mystring[20] = "my string";
+     - Same thing as number 2, but this time we create space for 20 bytes (more than we "need").
+- Depending on how you declare them, C string arrays may be full of uninitialized data - it's best to clear them before use.
+  + Use memset() function to do this.
+#+BEGIN_SRC C
+// Properly initialize a string of length 20
+char mystring[20];
+memset(mystring, '\0', 20);
+#+END_SRC
+- Combining Declaration Methods
+  + What does this mean: char* mystring[3];
+    - Declare an array of POINTERS, each of which points to a string. Each of these pointers can be pointed at either array names OR string literals.
+    - Remember that an array name is a pointer to the first element's address in memory.
+- Dynamically Allocating a String
+  + To create a string variable dynamically, and thus use it like an array, use malloc() and free:
+#+BEGIN_SRC C
+main() {
+    char* mystring;
+    char* literal = "literal";
+
+    mystring = malloc(20 * sizeof(char));
+
+    if (mystring == 0)
+        printf("malloc() failed!\n");
+
+    memset(mystring, '\0', 20);
+
+    sprintf(mystring, "yay! %s\n", literal);
+    printf("%s", mystring);
+    mystring[3] = 'Q'; // Note that char* mystring is editable!
+    printf("%s", mystring);
+
+    free(mystring);
+}
+#+END_SRC
+- Malloc Memory Leaks
+  + If you don't free dynamically allocated memory, it still takes up space.
+  + If you have a long-running program, like a server process, this could eventually use up all of your memory.
+  + Process memory is normally all freed automatically when a process is terminated.
+    - At least in UNIX, Windows, etc. - some real-time operating systems don't!
+  + Here's a classic way to hide and cause a leak:
+    - char* mystring = malloc(20 * sizeof(char));
+      ...
+      mystring = "hello";
+    - This leaks because you no longer have the start address of the dynamically allocated space; mystring now points to a string literal.
+      + And if you try free(mystring) later, it fails spectacularly because it tries to free memory that's NOT on the heap.
+** Processes
+[[youtube:1R9h-H2UnLs][Video Link]]
+*** The Process
+- _Process_: An instance of an executing program, with a collection of execution resources associated with it.
+*** UNIX Process Components
+- An unique identity (process id aka pid) : : pid_t pid = getpid();
+- A virtual address space (from 0 to memory limit)
+- Program code and data (varibles) in memory
+- User/group identity (controls what you can access), umask value (for default permissions)
+- An execution environment all to itself:
+  + Environment variables
+  + Current working directory
+  + List of open files
+  + A description of actions to take on receiving signals
+- Resource limits, scheduling priority
+- and more... see the exec() man page
+*** Programs vs Processes
+- A program is the executable code.
+- A process is a running instance of a program.
+- More than one process can be concurrently executing the same program code, with separate process resources.
+*** Important Process States in UNIX
+1) Running
+   - On the CPU executing instructions.
+2) Waiting
+   - Waiting for I/0, timer alarm, or signal - also known as "blocked".
+3) Runnable
+   - Waiting for the CPU.
+4) Zombie
+   - Exited, waiting for parent to clean it up.
+*** How Do You Create a Process?
+- Let shell do it for you!
+  + When you execute a program, the shell creates the process for you.
+- UNIX provides a C API for creating and managing processes explicitly.
+*** Managing Processes
+- Important Process Management Functions
+  1) fork()
+  2) The exec() family:
+     - execl(), execlp(), execv(), execvp()
+  3) exit()
+  4) wait(), waitpid()
+  5) getpid()
+  6) getenv(), putenv()
+*** How to Start a New Process - fork()
+**** fork() Basics
+- fork() clones a process. Both processes run the exact same code and continue execution from where the fork() call occured.
+- Process A == Process B ??
+  + No, the two processes have different pids.
+  + Each process returns a different value from fork().
+  + Process B gets copies of all the open file descriptors of Process A.
+  + Process B has all of the same variables set to the same values as Process A, but they are now separately managed!
+- fork() Return Value
+  + If something goes wrong, fork() returns -1 to the parent process, sets errno, and no child process gets created.
+  + If fork() is successful, it returns 0 to the child process and the child process' pid to the parent process.
+- The order of whether the parent or child outputs first is up to the OS and its scheduler.
+**** Key Items Inherited
+- Inherited by the child from the parent:
+  + Program code
+  + Process credentials (real/effective/saved UIDs and GIDs)
+  + Virtual memory contents, including stack and heap
+  + Open file descriptors
+  + Close-on-exec flags
+  + Signal handling settings
+  + Process group ID
+  + Current working directory
+  + Controlling terminal
+  + and more...
+**** Key Items Unique to the Child Process
+- Unique to the child:
+  + Process ID
+  + Own copy of file descriptors
+  + Process, text, data and other memory locks are NOT inherited
+  + Pending signals initialized to the empty set
+  + and more...
+**** Child Process Termination
+- A child process can exit for two reasons:
+  + It completes execution and exits normally.
+    - CASE 1: The child process completed what it was supposed to do and exited with a successful exit status (ie 0).
+    - CASE 2: The child process encountered an error condition, recognized it, and exited with a non-sucessful exit status (ie non-zero).
+  + It was killed by a signal.
+    - The child process was sent a signal that by default terminated a process, and the child process did NOT catch it.
+*** Checking the Exit Status - wait() and waitpid()
+**** Basics
+- Both of these commands check for child process termination.
+- For both functions, you pass in a pointer to which the OS writes and int, which identifies how the child exited.
+  + We examine this int with various macros to learn what happened.
+**** wait() vs waitpid()
+- wait() will block - until ANY one child process terminates; returns the process id of the terminated child.
+- waitpid() will block - until the child process with the SPECIFIED process ID terminates (or has already terminated); returns the process id of the terminated child.
+  + If you pass it a special flag (WNOHANG), it will check if the specified child process has terminated, then immediately return even if the specified child process hasn't terminated yet.
+- NOTE: They return -1 on failure
+**** wait() and waitpid() Syntax
+- pid_t wait(int *childExitMethod)
+- pid_t waitpid(pid_t pid, int *childExitMethod, int options)
+- Block this parent until ANY child process terminates:
+  + childPID = wait(&childExitMethod)
+- Block this parent until the specified child process terminates:
+  + childPID_actual = waitpid(childPID_intent, &childExitMethod, 0)
+- Check if any process has completed, return immediately with 0 if none have:
+  + childPID = waitPID(-1, &childExitMethod, WNOHANG)
+- Check if the process specified has completed, return immediately with 0 if it hasn't:
+  + childPID_actual = waitpid(childPID_intent, &childExitMethod, WNOHANG)
+**** Checking the Exit Status - Normal Termination
+- wait(&childExitMethod) and waitpid(..., &childExitMethod, ...) can identify two ways a process can terminate.
+- If the process terminates NORMALLY, then the _WIFEXITED_ macro returns non-zero:
+#+BEGIN_SRC C
+if (WIFEXITED(childExitMethod) != 0)
+    printf("The process exited normally\n");
+#+END_SRC
+- We can get the actual exit status with the _WEXITSTATUS_ macro:
+  + int exitStatus = WEXITSTATUS(childExitMethod);
+- We must first use WIFEXITED to check whether the process terminated normally, then we can use WEXITSTATUS to get the actual exit status.
+**** Checking the Exit Status - Signal Termination
+- If the process was terminated by a signal, then the _WIFSIGNALED_ macro returns non-zero:
+#+BEGIN_SRC C
+if (WIFSIGNALED(childExitMethod) != 0)
+    printf("The process was terminated by a signal\n");
+#+END_SRC
+- We can get the terminating signal with the _WTERMSIG_ macro:
+  + int termSignal = WTERMSIG(childExitMethod);
+- We can refer to different signal as integers; there is a mapping between signal flags and integers.
+**** Checking the Exit Status - Exclusivity
+- Barring the use of the non-standard WCONTINUED and WUNTRACED flags in waitpid(), only *one* of the WIFEXITED() and WIFSIGNALED macros will be non-zero!
+- Thus, if you want to know how a child process died, you need to use both WIFEXITED and WIFSIGNALED!
+- If the child process has terminated normally, do not run WTERMSIG() on it, as there is no signal number that killed it.
+- If the child process was terminated by a signal, do not run WEXITSTATUS() on it, as it has no exit status (i.e., no exit() or return() functions were executed).
+*** How to Run a Completely Different Program - The exec() Family
+**** Basics
+- fork() always makes a copy of your CURRENT program.
+- What if you want to start a process that is running a completely different program?
+  + For this we use the exec...() family.
+**** exec...() - Execute
+- exec...() replaces the currently running program with a NEW program that you specify.
+- The exec...() functions do not return - they destroy the currently running program.
+  + No line after a successful exec...() call will run.
+- You can specify arguments to exec...(): These become the command line arguments that show up as argc/argv in C, and as the $1, $2, etc postitional parameters in a bash shell.
+**** Two Types of Execution
+***** execl - exec list
+- int execl(char *path, char *arg1, ..., char *argn);
+- Executes the program specified by path, and gives it the command line arguments specified by strings arg1 through argn.
+***** execv - exec vector
+- int execv(char *path, char *argv[]);
+- Executes the program specified by path, and gives it the command line arguments indicated by the pointers in argv.
+**** Current Working Directory
+- execl() and execv() do not examine the PATH variable - they only look in the current working directory.
+- If you don't specify a fully qualified path name, then your programs will not be executed, even if they are in the directory listed in PATH, and execl() and execv() will return with an error.
+- To move around the directory structure in C, use the following:
+  + getcwd() : : Gets the current working directory
+  + chdir()  : : Sets the current working directory
+**** Exec...() and the PATH Variable
+- The versions of exec...() that end with a p (execlp and execvp) will search your PATH environment variable for the executable given in ~path~.
+- In general, you'll want to use the versions with p - execlp() or execvp() - as they are much more convenient.
+**** Execute a New Process
+- exec...() REPLACES the program it is called from - it does not create a new process!
+- Using fork() and exec...(), we can keep our original program going, and spawn a brand-new process!
+  + This is how a shell works.
+- NOTE: The pid does not change after an exec...() call.
+**** Passing Parameters to execlp()
+- First parameter to execlp() is the pathname of the new program.
+- Remaining paramters are "command line arguments".
+- First argument should be the same as the first parameter (the command itself).
+- Last argument must always be NULL, which indicates that there are no more parameters.
+- DO NOT pass any shell-specific operators into any member of the exec...() family, like <, >, |, &, or !, because the shell is not being invoked - only the OS is!
+- Ex) execlp("ls", "ls", "-a", NULL);
+**** Passing Parameters to execvp()
+- First parameter is pathname, second parameter is an array of pointers to strings.
+- First string should be the same as the first parameter (the command itself).
+- Everything else is the same as execlp()
+- Example:
+#+BEGIN_SRC C
+char* args[3] = {"ls", "-a", NULL};
+execvp(args[0], args);
+#+END_SRC
+*** exit()
+**** atexit()
+- Arranges for a function to be called before exit().
+**** exit() does the following:
+- Calls all functions registered by atexit()
+- Flushes all stio output streams
+- Removes files created by tmpfile() (a function that creates temporary files on disk)
+- Then calls _exit()
+**** _exit() does the following:
+- Closes all files
+- Cleans up everything - see the man page for wait() for a complete list of what happens on exit.
+**** return() from main() does exactly the same thing as exit()
+*** Environment Variables - setenv(), getenv(), and putenv()
+**** Environment Variables Basics
+- A set of text variables, often used to pass information between the shell and a C program.
+- May be useful if:
+  + You need to specify a configuration for a program that you call frequently (less, more for example).
+  + You need to specify a configuration that will affect many different commands that you execute (TERM, PAGER, PRINTER).
+- You can view/edit the environment variables from bash by using the _printenv_ and _export_ commands, and assignment (=) operator.
+- The environment can be edited in C with setenv() and getenv().
+**** Manipulating the Environment
+- In bash: Use export command which makes the environment variable available to the child processes of the shell that we're in.
+- In C: use setenv()
+#+BEGIN_SRC C
+setenv("MYVAR", "Some text string 1234", 1); // 1 means overwrite the value if it already exists
+printf("%s\n", getenv("MYVAR"));
+#+END_SRC
+- NOTE: You can manipulate environment variables from within a C program, but all the changes you make get removed once the program stops running.
+- A process's execution environment belongs to only that process, which gets its initial values from the parent shell - but a process cannot edit the environment variables of it's parent shell! (that would be a huge security issue!)
+  + Modifications, thus, will only be useful for your current process.
+*** Fork Bombs
+- Remember that you need to be really extra sure that you have termination methods built-in to your loops.
+- Consider having a variable set a flag called forkNow in your loop. Then, have a separate function call fork() because the flag value was set, with this function ALSO resetting the flag value at the end.
+- Consider during testing, for example, adding an extra condition to a loop with a counting variable: if ou hit 50 forks, say, then abort(), which doesn't do any clean up like exit() but just halts the program immediately.
+** Process Management and Zombies
+[[youtube:kx60fayG-qY][Video Link]]
+*** Running Processes
+- How can we tell which processes are running? Use the _ps_ command to get information about currently running processes.
+- ps by itself is really boring, and not all that useful.
+*** Watch Video for 'ps For Me' and 'ps For All' script breakdown
+*** Zombie Processes
+**** Basics
+- When a child process terminates, but its parent does not wait for it, the process becomes known as a zombie (aka defunct).
+- Child processes must report to their parents before their resources will be released by the OS.
+- If the parents aren't waiting for their children, the processes become the living undead - forever consuming, forever enslaved to a non-life of waiting and watching.
+- The purpose of a zombie process is to retain the state that wait() can retrieve; they WANT to be harvested.
+**** Zombie Program
+#+BEGIN_SRC C
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void main() {
+    pid_t spawnPid = -5;
+    int childExitStatus = -5;
+
+    spawnPid = fork();
+    switch (spawnPid) {
+        case -1:
+            // In case some fork call caused an error
+            perror("Hull Breach\n");
+            exit(1);
+            break;
+        case 0:
+            printf("CHILD: Terminating!\n");
+            break;
+        default:
+            printf("PARENT: making child a zombie for ten seconds\n");
+            printf("PARENT: Type \"ps -elf | grep \'username\'\" to see the defunct child\n");
+            printf("PARENT: Sleeping...\n");
+            fflush(stdout); // Make sure all text is outputted before sleeping
+            sleep(10);
+            waitpid(spawnPid, &childExitStatus, 0);
+            break;
+    }
+
+    printf("This will be executed by both of us!\n");
+    exit(0);
+}
+#+END_SRC
+*** Orphan Zombies
+- If a parent process terminates WITHOUT cleaning up its zombies, the zombies become orphan zombies.
+- Orphans are adopted by the init process (usually pid=1) which periodically (in practice, very quickly) waits() for orphans.
+- Thus, eventually the orphan zombies die.
+*** kill
+- This UNIX command is used to kill programs.
+- "kill" is really a misnomer - it really just sends signals.
+- USAGE: kill -TERM <pid>
+  + Where TERM is the signal to send.
+- The given PID affects who the signal is sent to:
+  + If PID > 0, then the signal will be sent to the process PID given.
+  + If PID == 0, then the signal is sent to all processes in the same process group as the sender (from an interactive command line, this means the foreground process group, i.e. your shell).
+  + More trickiness for PID < 0.
+- You can use the signal KILL to tell a process to immediately terminate with no clean-up.
+*** top
+- _top_ allows you to view the processes running on the machine in real time - one of the few animated built-in programs.
+*** Diagnosing a Slow CPU
+**** uptime
+- The _uptime_ command shows the average number of runnable processes over several different periods of time.
+- This shows the average number of runnable (current running process + queue of processes waiting to be run) or uninterruptable (waiting for IO) processes over the last 1, 5, and 15 minutes.
+- If uptime is showing that your runnable queue is consistently LARGER THAN the number of cores, your CPU is a bottleneck and is causing slow-down.
+**** Number of Cores?
+- COMMAND: cat /proc/cpuinfo
+  + For strictly number of cores: cat /proc/cpuinfo | grep "cpu cores"
+*** Job Control
+**** Basic Idea
+- How do we start a program, and still retain access to the command line for the next program we want to run?
+- Can we run multiple processes at once?
+- This is call Job Control in UNIX-speak.
+**** Foreground/Background
+- There can be only one shell FOREGROUND process - it's the one you're currently interacting with.
+- If you're at the command prompt, then your foreground program is the shell itself.
+- Processes in the BACKGROUND can still be executing, but they can also be in any number of stopped states.
+**** Foreground/Background in Reality
+- There really isn't any difference between processes in these two states; its merely shell nomenclature used to distinguish between them.
+- When a user enters a command that is intended to run in the foreground (i.e. a normal command), the process started runs to completion BEFORE the user is prompted again.
+- When a user enters a command that is intended to run in the background, the user is immediately prompted again after the process is executed.
+- In other words, control input to the terminal is not interrupted by a background process.
+**** Start a Program Backgrounded
+- Here's how to start a program in the background in the first place:
+  + $ ping www.oregonstate.edu &
+- The & means to start in the background, and must be the last character.
+- Note that stdout and stderr are still going to the terminal for that process, and stdin might be too if the shell is badly programmed.
+**** Stopping a Process
+- Sending the TSTP (Terminal Stop) signal stops (not terminates) a process, and puts it into the background.
+  + CTRL-Z also sends this signal.
+  + CTRL-C terminates the process.
+**** jobs
+- Use the _jobs_ command to see what you're running (in the background).
+  + -l option adds the PID
+  + OUTPUT: The - symbol means it was the 2nd to last process put in the background. The + symbol means it was the last process put in the background.
+- NOTE: Use the % symbol to reference by job number instead of PID.
+  + Ex) kill -KILL %1 means kill job number 1.
+**** fg
+- Use the job numbers provided by jobs to manipulate processes.
+- Bring job 1 from the background to the foreground, and start it running again:
+  + fg %1
+- Bring most recent backgrounded job to the foreground, and start it running again:
+  + fg
+**** bg
+- Start a specific stopped program that is currently in the background (and keep it in the background)
+  + bg %1
+- Start the most recently stopped program in the background (and keep it in the background)
+  + bg
+**** Who's Got Control of stdout?
+- BE ADVISED! - background processes can still write to any file including stdout and stderr!
+*** history - A Command Visibility Utility
+- The _history_ command provides a listing of your previous commands.
+  + Ex) history | tail -n 10 ---> prints the last 10 commands used
+** Signals
+[[youtube:VwS3dx3uyiQ][Video Link]]
+*** Inter-Process Communication (IPC)
+- How can we connect our processes together? How can they communicate? Are there simple ways to do it?
+- When a user process wants to contact the kernel, it uses a system call.
+- There are certain events that occur for which the kernel needs to notify a user process directly.
+- But how does the kernel or another process initiate contact with a user process?
+*** Signals
+**** Basic Concepts
+- Signals are the answer: they interrupt the flow of control by stopping the execution and jumping to an explicityl specified or default signal handler function.
+- Critical Point: Signals tell a process to DO something - to take an action because of a user command or and event.
+- There are a FIXED set of signals:
+  + You cannot create your own signals, though the programmatic response to and meaning of most signals is up to you.
+  + There are two signals with no inherent meaning at all - you assign meaning to them by catching them and running code.
+**** Uses for Signals: Kernel to Process
+- Notifications from the Kernel:
+  + A process has done something wrong
+  + A timer has expired
+  + A child process has completed executing
+  + An event associated with the terminal has occured
+  + The process on the other end of a communication link has gone away
+**** Uses for Signals: Process to Process
+- User process to user process notifications, perhaps to:
+  + Suspend or resume execution of process
+  + Terminate
+  + Change modes
+  + Change communication methods
+**** Signal Dictionary - Termination
+- Most signals in UNIX kill your process if they're not caught.
+- Some signals can be caught; you can register your own signal handler. But some, like SIGKILL, cannot be.
+- Processes that output a core dump do not clean anything up - they just die.
+- Specific signals that are used for process termination
+  + SIGABRT, SIGQUIT, SIGINT, SIGTERM, SIGKILL
+  + Watch video for more in-depth descriptions.
+**** Signal Dictionary - Notification of Wrongdoing
+- SIGSEGV: Segmentation Fault
+- SIGBUS: Bus Error
+- SIGFPE: Floating Point Error
+- SIGILL: Illegal CPU Instruction
+- SIGSYS: System Call
+  + When a system call passes an incompatible argument
+- SIGPIPE: Pipe Error
+**** Why Notify on Events? Branching Logic!
+- Gives the process a chance to clean up and finish any important tasks:
+  + Perform final file writes
+  + free() data
+  + Write to log files
+  + Send signals itself
+- A process catching a signal and handling it will do all, some, or non of the above, and then either terminate itself or continue executing!
+**** Signal Dictionary - Control
+- SIGALRM: Alarm
+- SIGSTOP: Stop
+  + Can't be caught
+- SIGTSTP: Terminal Stop
+- SIGCONT: Continue
+- SIGTRAP: Trap
+  + Unrelated to bash trap command.
+**** Timers!
+- If you want to wait a specified period of time...
+  + You can do a busy wait which will consume the CPU continuously while accomplishing nothing.
+  + Or you can tell the kernel that you want to be notified after a certain amount of time passes.
+- To set a timer in UNIX
+  + Call the alarm() or ualarm() functions
+    - alarm() only deals with seconds. ualarm() in ms
+  + After the time you specify has passed, the kernel will send your process a SIGALRM signal.
+- This is how sleep() works
+  + sleep() calls alarm()
+  + sleep() then calls pause(), which puts the process into waiting state.
+  + When SIGALRM is received, sleep() finally returns.
+**** Signal Dictionary - Child Process Has Terminated
+- SIGCHLD: Child Terminated
+  + A foreground or background child process of this process has terminated, stopped, or continued.
+- Normally, wait() and waitpid() will suspend a process until one of its child processes has terminated.
+- Using the signal SIGCHLD allows a parent process to do other work instead of going to sleep and be notified via signal when a child terminates.
+- Then, when SIGCHLD is received, the process can (immediately or later) call wait() or waitpid() when ready, perhaps leaving the child a zombie for just a little while.
+**** Signal Dictionary - User-Defined Signals
+- SIGUSR1: User 1
+- SIGUSR2: User 2
+- These signals have no special meaning to the kernel.
+- The author of both the sending and receiving processes must agree on the interpretation of they're meaning.
+*** Abnormal Termination: Core Dumps
+- Some signals received CAUSE an "abnormal termination".
+- This also occurs during runtime if the process crashes due to a segmentation fault, bus error, etc.
+- When this happens, a memory core dump is created which contains:
+  + Contents of all variables, hardware registers, and kernel process info at the time the termination occured.
+- This core file can be used after the fact to identify what went wrong.
+  + Understanding them can be hard though.
+- Depending on configuration, core dump files can be difficult to locate on your machine.
+*** Signal Handling API
+- Signals that hit your process will cause the default action to occur.
+- To change this, organize signals into sets, then assign your own custom defined "signal handler" functions to these sets, to override the default actions and do whatever you want.
+- But first we need to discuss a few utility functions that allows all of this to work.
+*** Sleeping With One Eye Open Utility: pause()
+- Sometimes a process has nothing to do, so you consider calling sleep(), but you want it to be able to respond to signals, which it can't do in sleep() since it's a blocking system call.
+- To handle this, use the pause() function.
+-
+*** h
+
+
+* Writing a Shell in C
+** Stephen Brennan Tutorial
+
+* OS Lectures (Part 1)
+** Lecture 1
+#+date: <Tue 09-01-2020>
+** OS Concepts
+- OS is a piece of software that controls the hardware so applications don't have to worry about it.
+- Controls OS Has: Memory, Disk, CPU, Network
+** CS211 Review
+- Clock speed tells you the time it takes for CPU to execute 1 instruction.
+- Cache Types: On chip (on the processor itself), Off chip (on the motherboard)
+  + Most cache operations are done by pure hardware because software is too slow in comparison to cache memory.
+  + This is not the case for main memory though.
+- TLB is a cache that ONLY the OS can use.
+
+** Lecture 2
+#+date: <Fri 09-04-2020>
+** Interrupts
+- Interrupts are the main way that the OS gains control of a program; it interrupts the Fetch, Decode, Execute loop.
+- After an interrupt occurs, the program counter jumps to an interrupt handler.
+** What is an OS?
+- It's a control program (software) that controls the execution of application programs.
+- Tells the CPU when to execute other programs.
+- Masks the detais of the hardware to application programs.
+** Where is the OS?
+- Apps typically rin directly on hardware and will switch over to the OS when it needs help.
+** What does the OS provide?
+1. Arbitration or Resource Management
+   - Manages resources. What is a resource? Anything needed for program execution i.e. CPU, memory, disk, network interface card.
+   - Allocates resources amongst programs.
+   - Provides isolation. One program does not corrupt others.
+   - Challenges of OS providing resource management:
+     + What are the correct mechanisms?
+     + What are the correct policies?
+2. Abstraction
+   - Provides standard library for resources.
+   - Modern OS Abstractions:
+     + CPU: Process and/or Thread
+     + Memory: Address space
+     + Disk: Files
+3. Virtualization
+   - Provides an illusion of the entire system available to programs.
+   - How?
+     + Allow multiplexing of resources among programs.
+     + Multiprogramming, Timesharing (more modern)
+
+** Lecture 3
+#+date: <Fri 09-11-2020>
+** Ways of Jumping into OS Code
+1. I/O Hardware Interrupts
+   - Asynchronous Interrupts
+2. Program Exception
+   - Synchronous Interrupts
+3. An unusual condition resulting from the execution of an instruction - caused by the running process (need attention of OS)
+4. Timer Interrupts
+   - Traps - Occur at endof instruction (special instructions or overflows)
+5. Hardware Failure
+   - Ex) Memory parity error OR memory full
+** Classes of Interrupts
+1. Software Interrupts - types of exceptions
+2. Try to execute illegal instruction (beginning of instruction)
+   - _Fault_: Exception that can be cleared (ex: page fault)
+   - _Abort_: Exception that cannot be cleared (ex: reference outside user's memory space)
+3. Software Interrupts
+   - Signals
+** System Calls
+- Allows user to tell the OS what to do.
+- The OS provides somes interface (API)
+
+** Lecture 4
+#+date: <Tue 09-15-2020>
+** Understand 3 Concepts
+1. Procedure Call
+2. System Call
+3. Context Switch
+** Virtualization
+*** Virtualizing the CPU
+- The system has a very large number of virtual CPUs.
+- Turning a single CPU into seemingly infinite number of CPUs.
+- Allowing mnay programs to seemingly run at once, vitualizing the CPU.
+*** Virtualizing Memory
+- The physical memory is an array of bytes.
+- A program keeps all its data structures in memory.
+- Read memory (load): Specify an address to be able to access the data.
+- Write memory (store): Specify the data to be written to the given address.
+- Address Space Randomization
+** Concurrency
+- Events are occuring simultaneously and may interact with one another.
+- OS must be able to handle concurrent events.
+- Not only do we have concurrently running programs, but these programs could have multiple concurrent threads running wthin them.
+** Persistence
+- Access information permanently.
+  + Lifetime of information is longer than lifetime of any one process.
+  + Machine may be rebooted, machine may lose power or crash unexpectedly.
+- Issues
+  + Provided abstraction so applications do not know how data is stored: Files, directories, links, etc.
+  + Correctness with unexpected failures.
+  + Performance: Disks are very slow; many optimizations needed!
+** Process and Threads
+*** Process Concepts
+- _Process_: A program in a state of execution.
+- _Program_: A static entity that contains instructions to be executed. Mainly resident on disk.
+- A process has multiple parts:
+  + The program code, also called the _text section_
+
+** Lecture 5
+#+date: <Fri 09-18-2020>
+** Process States and Process Control Block
+- Context Switch: Saving old process state and loading new process state.
+** Process Creation
+- Parent process cretae children processes, which, in turn create other processes, forming a tree of processes.
+- When a process is created, you need to
+  + Allocate memory for it.
+  + Find out where the code for this process is.
+** fork() and exec()
+
+** Lecture 6
+#+date: <Tue 09-22-2020>
+** Process Termination
+*** exit() System Call
+*** abort System Call
+*** kill(pid, SIGKILL) System Call
+** Threads
+- A program or a process needs to perform mulitple activities.
+  + Handle multiple network requests, multiple windows, etc.
+- Will run as independent tasks, any shared state will have to have special mechanisms (expensive, like writing to a file).
+- Sequential unit of execution within a process is called a thread.
+- Reasons for Threads
+  1. Task Concurrency
+     + Accept requests, does work seperately, etc.
+  2. Foreground Task and Background Task/s
+     + Ex) Movie streaming in the background, Playback controls (play, pause, etc.) in the foreground
+  3. Multiple Cores in CPU
+     + Want to maximize CPU usage
+- Thread of Execution
+  + Thread = Single sequence of instructions
+    - Pointed to by the program counter (PC)
+    - Executed by the processor
+- Problems with Concurrent Processes
+  1. Can't easily share data (heaps are separate)
+  2. Can't easily communicate between different processes
+  3. OS needs to context switch to run the different process
+     + A lot of overhead in a context switch.
+- Threads are commonly referred to as "lightweight" processes.
+** Multi-Threaded Model
+- A thread is a subset of a process
+  + A process contains one or more kernel threads.
+- Threads SHARE memory and open files
+  + BUT have SEPARATE program counter, registers, and stack.
+  + Shared memory includes the heap and global/static data.
+  + NO memory protection amongst the threads.
+- Threads SHARE .data, heap, and code (text). But, they have separate stacks.
+** Thread Implementation
+- Process infor (PCB) contains one or more Thread Control Blocks (TCB):
+  + Thread ID
+  + Saved Registers
+  + Other pre-thread info (signal mask, scheduling parameters)
+- Cost(Thread_Switch) << Cost(Process_Switch)
+** Multi-Threaded Programming Patterns
+- Single Task Thread
+  ...
+** Kernel-Level Threads vs User-Level Threads
+- Kernel-Level
+  + Threads supported by operating system through thread system calls.
+  + The OS handles scheduling, creation, synchronization.
+- User-Level
+  + Library with code for creation, termination, scheduling.
+  + Kernel sees one execution context: ONE PROCESS
+    - Cannot take advantage of multiple cores
+  + May or may not be preemptive
+  + POSIX Threads (pthreads) are considered user-level threads.
+- Essentially, if the OS KNOWS about the concept/existence of threads in a program, then those are kernel-level threads.
+
+** Lectue 7 - Threads and Scheduling
+#+date: <Fri 09-25-2020>
+** User-Level Threads (ULTs)
+- The kernel is not aware of the existence of threads.
+- All thread management is done by the application by using a thread library.
+- Thread switching does not require kernel mode privileges (NO mode switch).
+- Scheduling is application specific.
+- You can create as many threads as you want, but in the kernel's view, it's only dealing with ONE process.
+- The library has to handle all the thread switching and resource management.
+** Threads Library
+- Contains code for:
+  + Creating and destroying threads
+  + Passing messages and data between threads
+  + Scheduling thread execution
+  + Saving and restoring thread contexts
+** Kernel Activity for ULTs
+- When a thread makes a system call, the WHOLE process will be blocked.
+- But for the thread library that thread is still in the running state.
+- So thread states are independent of process state.
+** Kernel Level Threads (KLT)
+- All thread management is done by the kernel.
+- No thread library, but an API to the kernel thread facility.
+- Kernel maintains context information for the process and the threads.
+- Switching between threads requires the kernel.
+- Scheduling on a thread basis.
+** You can have BOTH
+- You can have a user-level thread library running on top of multiple kernel threads.
+** CPU Scheduling
+- We concentrarte on the problem of scheduling the usage of a single processor among all the existing processes in the system.
+- The GOAL is to achieve:
+  + High processor utilization
+  + High throughput
+    - Number of processes completed per unit time
+  + Low Response Time
+    - Time elapsed from the submission of a request to the beginning of the response
+*** Classifications of Scheduling Activity
+- Long-term: which process to admit
+- Medium-term: which process to swap in or out
+  + Degree of multiprogramming.
+  + Decides how many processes are in memory.
+- Short-term: which ready process to execute next
+  + Most of the scheduling algorithms we study in this class are short-term.
+*** Short-Term Scheduling
+- Determines which process is going to execute next (also called CPU scheduling).
+- Is invoked on an event that may lead to choose another process for execution:
+  + Clock interrupts
+  + I/O Interrupts
+  + OS calls and traps
+  + Signals
+- Short-Term Scheduling Criteria
+  + User-Oriented
+    - *Response Time* Elapsed time from the submission of a request to the beginning of the response.
+    - *Turnaround Time* Elapsed time from the submission of a process to its completion.
+  + System-Oriented
+    - Processor Utilization
+    - Fairness
+    - *Throughput* Number of processes completed per unit time.
+*** Characterization of Scheduling Policies
+- The selection function: Determines which process in the ready queue is selected next for execution.
+- The decision Mode: Specifies the instants in time at which the selection function is exercised.
+  + Nonpreemptive
+  + Preemptive
+
+** Lecture 8
+#+date: <Tue 09-29-2020>
+** Scheduling Algorithms
+*** First Come, First Serve (FCFS)
+- Run jobs to completion in the order they arrive.
+- *Turnaround Time* = time_completed - time_arrived
+- *Wait Time* = time_started - time_arrival
+- Characteristics
+  + Very simple to implement.
+  + Long-running, CPU-bound tasks will hog the CPU.
+    - System utilization is low.
+  + Non-Preemptive
+  + Does NOT optimize for wait time, NOR throughput
+*** Shortest Job First (SJF)
+- Let shortest jobs run first => Optimizes for turnaround time.
+- Using a "profiler" (statistical magic), pick the job that is "expected" to take the least CPU time.
+- Advantages
+  + Minimizes turnaround time.
+- Disadvantages
+  + Starvation
+    - Processes that take a long time to execute, will never get a chance to run.
+    - Overhead in "profiling" every process.
+    - Less fairness.
+*** Round-Robin
+**** Basics
+- _Preemptive Scheduling_: A process cannot run for longer than its assigned _quantum_ (time slice).
+- Good policy if you want a responsive/interactive process.
+- Completion time is dependent on the workload (number of processes) and the quantum.
+- Wait time only depends on the quantum.
+**** Time Slice (Quantum) Length
+- Long quantum: Reduces interactivity
+- Short quantum: Increases overhead percentage of context switching.
+- No perfect answer
+  + Servers: use longer quantum
+  + Interactove systems: use short quantum
+- But interactive and I/O bound processes will rarely use up their time slice.
+**** Characteristics
+- Behavior depends on the quantum
+  + Long quantum makes this similar to FCFS
+  + Short quantum increases interactivity, but increases context switching overhead
+- Advantages
+  + ...
+- Disadvantages
+  + ...
+*** Shortest Remaining Time First (SRT)
+- Sort jobs by anticipated CPU burst time.
+- Optimizes average response/wait time.
+
+** Lecture 9
+#+date: <Fri 10-02-2020>
+** Scheduling Continued
+*** Priority Scheduling
+*** Multilevel Queues (MLQ)
+*** Multilevel Feedback Queues
+** Concurrency: Mutual Exclusion and Synchronization
+*** Problems with Concurrent Thread Execution
+**** Race Conditions
+**** The Critical Section Problem
+- _Critical Section_: The pirece of the code that manipulates shared data.
+
+** Lecture 10
+#+date: <Tue 10-06-2020>
+*** Mutual Exclusion - Safety Property
+- One person at a time using the critical section.
+*** Progress or Liveness
+- You can't prevent others from entering the critical section. Deadlocks.
+*** Lack of Starvation
+- Everyone gets a turn to access the criticial section.
+*** Types of Solutions
+1) Software solutions
+2) Hardware solutions
+3) OS Primitives
+*** Software Solutions
+*** Peterson's Algorithm
+*** Bakery Algorithm - Peterson's Algorithm for N Processes
+*** Problems with Software Solutions
+- What if a thread crashes in the critical section?
+- Busy Wait; you're always checking whether you can enter critical section or not
+  + Better implementation is to have threads not in CS sleep(), and then have the CS thread send a signal when it's done.
+*** Hardware Solutions
+*** Interrupt Disabling
+*** Special Machine Instructions
+**** Atomic read-write instruction
+***** test_and_set Instruction
+** Lecture 11
+#+date: <Fri 10-09-2020>
+*** Hardware Solutions - Special Machine Instructions
+*** compare_and_swap Instruction
+- Executed atomically
+- Returns the original value of passed parameter "value".
+*** Semaphores
+- An example of a "blocking solution".
+- Synchronization tool provided by the OS that does not require busy waiting.
+- A semaphore is an int variable that, apart from initialization, can only be accessed through 2 atomic and mutually exclusion operations wait() and signal().
+*** Binary Semaphores
+- Similar to counting semaphore except that "count" is a Boolean value (0 or 1).
+- mutex_lock and mutex_unlock are examples of binary semaphores.
+*** Implementing Genereal Semaphore Using Binary Semaphore
+
+
+* OS Lectures (Part 2)
+** Lecture 1
+#+date: <Tue 10-27-2020>
+*** Static Relocation
+- Disadvantages
+  + No protection.
+  + Cannot move address space after it has been placed.
+*** Dynamic Relocation
+**** Basic Concepts/Advantages over Static Relocation
+**** Logical (virtual) vs Physical Address Space
+- The *virtual address space* depends on how many bits are there in the CPU for addressing.
+  + 16 bit address -> 2^16 -> 64 K
+  + 32 bit address -> 2^32 -> 4 GB
+- *Physical Address space* depends on how much memory you have installed on your machine.
+- If VAS > PAS
+  + You can't fit the entire VAS in the physical memory. Meaning you can't just store an entire program in the memory, seemingly.
+- If VAS < PAS
+  + Easy case, you can fit the entire VAS in the physical memory.
+**** Base and Limit (Bound) Registers
+- Advantages
+  + Gives us protection and allows us to move the address space around.
+- Disadvantages
+  + Each process must be allocated contiguously in phsyical memory.
+    - Must allocate memory that may not be used by process.
+  + No partial sharing: Cannot share limited parts of address space.
+*** Segmentation
+** Lecture 3
+#+date: <Tue 11-03-2020>
+*** Case 1: Virtual Address Space == Physical Address Space
+*** Case 2: Virtual Address Space < Physical Address Space
+*** Case 3: Virtual Address Space > Physical Address Space
+*** NOTE: For ALL 3 cases VPS == PPS (page size)
+*** What Determines Page Table Size?
+*** Demand Paging
+- Only load pages into memory when you actually need them.
+- Programs very rarely access all their virtual pages of memory simultaneously.
+- This is critical when the virtual memory is larger than physical memory itself.
+- Also accomadates a high degree of multiprogramming.
+- Lazy/On-Demand Swapping vs. Prefetching
+*** Valid-Invalid Bit
+- If a page is valid, it is part of the virtual address space.
+*** Present Bit
+- 0: Page is on disk
+- 1: Page is in memory

@@ -1,0 +1,112 @@
+#+TITLE: LaTeX Notes
+
+* Learn LaTeX in 30 minutes (Overleaf Tutorial)
+[[https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes][Article Link]]
+** What is LaTeX?
+- _LaTeX_ is a tool used to create professional-looking documents.
+- Instead of manually taking care of a document's formatting, like you would on Microsoft Word, users can simply enter plain text and LaTeX takes care of the rest.
+
+
+* Intro to LaTeX: Learn to Write Beautiful Math Equations
+[[youtube:Jp0lPj2-DQA][Video Link]]
+** Preamble
+- A basic preamble for an "article".
+#+begin_src latex
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Hello, World!}
+\author{Osvaldo Neto}
+\date{January 17, 2021}
+#+end_src
+** Document Structure, maketitle, and Sections
+- After the preamble, you must specify where your document begins and ends.
+- You can also use =\maketitle= to display a nice title section using the title, author, and date information we specified in the preamble.
+- Use =\section{<sec_name>}= to specify sections in your document.
+  + If you don't want your sections to be numbered, use =\section*{<sec_name>}= instead.
+#+begin_src latex
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\end{document}
+#+end_src
+** Formulas
+*** Inline Formula
+- An _inline formula_ is aligned with the text. You can create one using the =$= operator.
+#+begin_src latex
+This is an inline formula: $ e^{i\pi}+1=0 $
+#+end_src
+*** Separate Formulas (and Fractions, Limits, nth Roots, and Sums)
+- If you want a formula to take up its own line and environment, use the =$$= operator.
+- Fractions can be created like this: =\frac{numerator}{denominator}=
+- If you want expressions with auto-scaled parentheses, you need to specify the left and right parentheses: =\left(  \right)=
+#+begin_src latex
+Let's write a formula for e.
+
+$$ e= \lim_{n\to\infty} \left(1+\frac{1}{n}\right)^n =
+\lim_{n\to\infrty}\frac{n}{\sqrt[n]{n!}} $$
+
+We can do another:
+
+$$ e=\sum_{n=0}^{\infty} \frac{1}{n!} $$
+#+end_src
+** Lists
+- An _enumerated list_ goes in between =\begin{enumerate}= and =\end{enumerate}=.
+  + A _bullet list_ goes in between =\begin{itemize}= and =\end{itemize}=.
+- Each item in the list gets specified with an =\item= tag.
+** More Formulas
+- For a wider array of math formulas =\usepackage{amsmath}=.
+*** Integrals
+- Single Integral
+#+begin_src latex
+
+$$ \int_a^bf(x)dx $$
+#+end_src
+- Triple Integral
+#+begin_src latex
+
+$$ \iiint f(x,y,z)dxdydz $$
+#+end_src
+*** Vectors
+- Vector Definition
+#+begin_src latex
+
+$$ \vec{v}=<v_1, v_2, v_3> $$
+#+end_src
+- Dot Product
+#+begin_src latex
+
+$$ \vec{v}\cdot \vec{w} $$
+#+end_src
+*** Matrices
+- bmatrix
+#+begin_src latex
+
+$$
+\begin{bmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+\end{bmatrix}
+$$
+#+end_src
+** Images and Commenting
+- Comments can be created using the =%= operator.
+- To import images into your document, first =\usepackage{graphicx}=
+- Then place the image in the current directory of your .tex file.
+- After that, simply place the line =\includegraphics[scale=<scale_factor>]{img_name}= in the document.
+
+* Luke Smith's /Learn Latex Tutorial/
+[[https:www.youtube.com/playlist?list=PL-p5XmQHB_JSQvW8_mhBdcwEyxdVX0c1T][Playlist Link]]
+** Basic Compiling, Titles, Sections, Formatting and Syntax
+- Compiling a latex file: =pdflatex <filename>.tex=
+- To move to a new paragraph, you need to press ENTER twice.
+- Bold text: =\textbf{This is bold text!}=
+- Italic text: =\textit{This is italic text}= OR =\emph{This text is emphatic!}=
+- Underline text: =\underline{This text is underlined}=
+- Quotations done right
+  + "This kind of quotation looks wrong in LaTeX"
+  + ``Use this instead''
+  + `Same for single quotes'

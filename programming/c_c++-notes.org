@@ -1,0 +1,10 @@
+#+AUTHOR: Ozzy Neto
+#+TITLE: C, C++, and CMake Notes
+
+* C++
+
+
+* CMake
+** Better CMake
+CMake tutorial on Youtube. [[https:www.youtube.com/playlist?list=PL8i3OhJb4FNV10aIZ8oF0AA46HgA2ed8g][Playlist Link]]
+*** a

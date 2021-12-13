@@ -1,0 +1,220 @@
+#+TITLE: Python Notes
+
+* Web Scraping with Python - Beautiful Soup Crash Course
+[[youtube:XVv6mJpFOb0][Video Link]]
+** Basic HTML Structure, HTML Tag Expansion
+*** Code for the Basic HTML Page
+#+begin_src html
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+      <title>My Courses</title>
+   </head>
+   <body>
+      <h1>Hello, Start Learning!</h1>
+      <div class="card" id="card-python-for-beginners">
+         <div class="card-header">
+            Python
+         </div>
+         <div class="card-body">
+            <h5 class="card-title">Python for beginners</h5>
+            <p class="card-text">If you are new to Python, this is the course that you should buy!</p>
+            <a href="#" class="btn btn-primary">Start for 20$</a>
+         </div>
+      </div>
+      <div class="card" id="card-python-web-development">
+         <div class="card-header">
+            Python
+         </div>
+         <div class="card-body">
+            <h5 class="card-title">Python Web Development</h5>
+            <p class="card-text">If you feel enough confident with python, you are ready to learn how to create your own website!</p>
+            <a href="#" class="btn btn-primary">Start for 50$</a>
+         </div>
+      </div>
+      <div class="card" id="card-python-machine-learning">
+         <div class="card-header">
+            Python
+         </div>
+         <div class="card-body">
+            <h5 class="card-title">Python Machine Learning</h5>
+            <p class="card-text">Become a Python Machine Learning master!</p>
+            <a href="#" class="btn btn-primary">Start for 100$</a>
+         </div>
+      </div>
+   </body>
+</html>
+#+end_src
+*** What Some of These Tags Mean
+**** h Tags
+- Header tags. h1 is largest font, h5 smaller.
+**** div Tags
+- Allows us to style tags in different ways.
+- Basic tag that creates tags in different stylings. In this example, the tag is created in the "card" style.
+**** p Tags
+- Paragraph (body of text) tags.
+**** a Tags
+- Reference to another web page that you can visit.
+**** ul Tags
+- Unordered List
+**** li Tags
+- List
+** Packages Installation
+- Before getting started with web scraping using the Beautiful Soup library you need to install some packages.
+- Packages Needed
+  1) Beautiful Soup Library
+     - pip install beautifulsoup4
+  2) Parser Method (LXML in this case)
+     - pip install lxml
+** Scraping Usage, Local Files
+*** Importing Beautiful Soup Library Into the Project
+- *from bs4 import BeautifulSoup*
+*** Code to Read a Local File in Python
+#+begin_src python
+"""
+Opens the HTML file in the current directory in read-only mode
+Saves the open file into a variable and prints out its contents
+"""
+with open('home.html', 'r') as html_file:
+    content = html_file.read()
+    print(content)
+#+end_src
+** Beautiful Soup find() and find_all() Methods
+**** BeautifulSoup Basics
+- We want to use the Beautiful Soup library to prettify HTML code and work with its tags like Python objects.
+- To do this, we need to create an instance of a BeautifulSoup object.
+  + First Constructor Argument  : Contents of HTML file ('content')
+  + Second Constructor Argument : Parser Method ('lxml')
+**** find() Method
+- Searches for a specific tags. When it finds the first matching tag, it STOPS searching.
+**** find_all() Method
+- Same as find(), but keeps on searching after first hit. Returns all instances of the tag in the file in the form of a list.
+- Ex) Finding (and Printing) All Courses
+#+begin_src python
+soup = BeautifulSoup(content, 'lxml')
+courses_html_tags = soup.find_all('h5')
+for course in courses_html_tags:
+    print(course.text)
+#+end_src
+** Web Browser Inspect Tool
+- Important to use your browser's inspect tool to look at a web page's code. Real web pages are not as easy to scrape as our example HTML page.
+- To open the inspect tool in Chrome and Brave, simply hover over an element you want to inspect, right-click and hit "Inspect".
+  + Shortcut: CTRL-SHIFT-i
+** Grab All Prices, Basic Scraping Project
+#+begin_src python
+course_cards = soup.find_all('div', class_='card') # Notice that we use "class_" instead of "class"
+
+for course in course_cards:
+    course_name = course.h5.text
+    course_price = course.a.text.split()[-1]
+
+    print(f'{course_name} costs {course_price}')
+#+end_src
+** Using the Requests Library to see a Website's HTML
+*** Install Requests Library
+- *pip install requests*
+*** Import Requests Library in Project
+- *import requests*
+*** Grabbing HTML Code of a Web Page
+#+begin_src python
+import requests
+
+html_text = requests.get('https://www.google.com/').text # google.com as an example
+print(html_text) # prints the HTML code
+#+end_src
+** Scraping a Production Website, Best Practices for Pulling Info
+*** Trick for getting rid of whitespaces in result text
+- *.replace(' ', '')*
+- This replaces all the spaces in a string with an empty char.
+** Looping Through Similar soup.find_all() Objects
+#+begin_src python
+from bs4 import BeautifulSoup
+import requests
+
+html_text= requests.get('https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords=python&txtLocation=').text
+
+soup = BeautifulSoup(html_text, 'lxml')
+jobs = soup.find_all('li', class_ = 'clearfix job-bx wht-shd-bx')
+for job in jobs:
+    published_date = job.find('span', class_='sim-posted').span.text
+    if 'few' in published_date: # Only want jobs posted 'a few days ago'
+        company_name = job.find('h3', class_ = 'joblist-comp-name').text.replace(' ','')
+        skills = job.find('span', class_ = 'srp-skills').text.replace(' ','')
+
+        print(f'''
+        Company Name: {company_name}
+        Required Skills: {skills}
+        ''')
+
+        print('')
+#+end_src
+** Prettifying the Jobs Paragraph
+*** Formatted Strings and the strip() Method
+#+begin_src python
+print(f"Company Name: {company_name.strip()}")
+print(f"Required Skills: {skills.strip()}")
+#+end_src
+- The _strip()_ method used removes any leading (spaces at the beginning) and trailing (spaces at the end) characters (space is the default leading character to remove).
+** Jobs Filtration by Owned Skill
+*** Prompting the User
+#+begin_src python
+print('Put some skill that you are not familiar with')
+unfamiliar_skill = input('> ')
+print(f'Filtering out {unfamiliar_skill}')
+#+end_src
+** Setting Up the Project to Scrape Every 10 Minutes
+- Place our scraping code in a function and run that function every 10 minutes.
+- To do this, we need to use Python's built-in _time_ library.
+  + *import time*
+  + We want to make use of the sleep() function.
+- Code
+#+begin_src python
+if __name__ == '__main__':
+    while True:
+        find_jobs() # Run our scraping function
+        time_wait = 10
+        print(f'Waiting {time_wait} minutes...')
+        time.sleep(time_wait * 60) # sleep function's input is the # of seconds you would like to wait
+#+end_src
+** Storing the Jobs Paragraph in Text Files
+- Use the "with open()" functionality with an index so that each job posting data is stored in a separate txt file.
+** Final/Complete Project Code
+#+begin_src python
+from bs4 import BeautifulSoup
+import requests
+import time
+
+print('Put some skill that you are not familiar with')
+unfamiliar_skill = input('>')
+print(f'Filtering out {unfamiliar_skill}')
+
+def find_jobs():
+    html_text = requests.get('https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords=python&txtLocation=').text
+    soup = BeautifulSoup(html_text, 'lxml')
+    jobs = soup.find_all('li', class_ = 'clearfix job-bx wht-shd-bx')
+    for index, job in enumerate(jobs):
+        published_date = job.find('span', class_='sim-posted').span.text
+        if 'few' in published_date:
+            company_name = job.find('h3', class_ = 'joblist-comp-name').text.replace(' ','')
+            skills = job.find('span', class_ = 'srp-skills').text.replace(' ','')
+            more_info = job.header.h2.a['href']
+            if unfamiliar_skill not in skills:
+                with open(f'posts/{index}.txt', 'w') as f:
+                    f.write(f"Company Name: {company_name.strip()} \n")
+                    f.write(f"Required Skills: {skills.strip()} \n")
+                    f.write(f'More Info: {more_info}')
+                print(f'File saved: {index}')
+
+if __name__ == '__main__':
+    while True:
+        find_jobs()
+
+        # IMPORTANT: KEEP THIS AMOUNT HIGHER AS POSSIBLE TO AVOID SCRAPING CONTINOUSLY A WEBSITE.
+        # YOU DO NOT WANT TO BE CONSIDERED AS A BOT WHO TRIES TO ATTACK A WEBSITE BY REQUESTING FROM IT TOO MUCH
+        time_wait = 10
+        print(f'Waiting {time_wait} minutes...')
+        time.sleep(time_wait * 60)
+#+end_src

@@ -1,0 +1,358 @@
+#+TITLE: Doom Emacs Notes
+
+* Episode 1: Getting Started
+- Use the .doom.d/packages.el file to install packages that aren't listed in the doom init file.
+  - Use bin/doom install to actually install the packages.
+- After modifying your configuration, you should run bin/doom refresh.
+- bin/doom upgrade
+  - Upgrades the Doom Emacs version
+- bin/doom update
+  - Updates installed packages
+- bin/doom doctor
+  - Helps with troubleshooting
+
+* Episode 2: Projects, File Explorer, Eshell
+- Command to Jump to your private doom config files
+  - SPC-f p
+** Projects with Projectile
+*** Getting Projectile to Index Your Project Directories
+1) RUN COMMAND: M-x projectile-discover-projects-in directory
+2) Select a folder that contains your projects
+3) Hit ENTER
+**** Using a Search Path
+1) List the search path directories in a projectile-project-search-path variable in your config.
+2) RUN COMMAND: M-x projectile-discover-projects-in-search-path
+   - Or simply restart Emacs
+*** More About Projectile
+- If you want to mark a folder manually as a project, just create an empty .projectile file in it.
+- To browse for projects: SPC-p p
+** File Explorer with Treemacs
+- Open Treemacs with COMMAND: SPC-o p
+** Eshell
+- Open small Eshell with COMMAND: SPC-o e
+- Open Eshell in its own buffer with COMMAND: SPC-o E
+** More File Commands
+- Open Recent Files
+  - SPC-f r
+- Open Recent Files in Current Project
+  - SPC-f R
+
+* Episode 3: A Short Intro to Dired
+** Dired (Directory Editor) Commands and Actions
+- Collapse the listing information: (
+- Move up the directory tree: - OR ^
+- Create a new directory: +
+  + Then Doom will prompt you for the name of the new directory.
+- Delete a directory:
+  + Press 'd' when hovering on the directory you wish to delete.
+  + Press 'x' to actually delete it.
+  + Press 'y' when Doom prompts you if you're sure you want to delete the directory.
+- Create a new File within a directory: SPC-.
+  + Then Doom will prompt you for the name of the new file.
+- Sort directories/files by name and date: o
+- Modify File Modes: M
+  + Example: u+w,g-w
+    - Give write privilege to users and revoke it from group.
+- Change Owner of a File: O
+- Select ALL directories: */
+  + Press 't' to toggle between all files and all directories.
+- Unselect ALL: U
+- Select individual file/directory: m
+- Unselect individual file/directory: u
+  + NOTE: 't' always INVERTS the current selection
+- Rename files and directories:
+  + Go into insert mode and simply change the name of the file/directory.
+  + Write the buffer ":w"
+
+* Episode 4: Buffers, Windows, and Basic Navigation
+** Moving Between Buffers
+- Switch Between Workspace Buffers (buffers in the current project)
+  + SPC-b-b
+  + SPC-,
+- Switch Between ALL Open Buffers
+  + SPC-b-B
+  + SPC-<  (space-shift-,)
+  + If you press SPC while at the prompt for this command, you can see all open _hidden buffers_.
+** Killing Buffers
+- Killing the current buffer
+  + SPC-b-k
+** Saving Scratch/Special Buffers
+- SPC-b-s
+  + Give it a file name.
+** Windows Splits/Movement
+- Split a Windows Vertically
+  + C-w v
+- Split a Window Horizontally
+  + C-w s
+- Move to a different Window
+  + C-w w
+  + You can also use the vi keys to dictate how you move through the windows.
+    - C-w j --> Moves to the lower window
+    - C-w k --> Moves to the upper window
+    - etc.
+- Closing a Window
+  + C-w q
+** Resizing Windows
+- C-w <
+- C-w >
+- Make windows equal width
+  + C-w =
+
+* Episode 10: Org Mode - Links, Hyperlinks, and more
+** Links
+- Creating a Link to move around org document
+  + Type square brackets twice, then within type the name of the headline (bullet) you want to jump to. Press ENTER on this link and it should jump you to that headline.
+  + [ [<headline_name>]]
+  + You can also highlight text and type SPC-m-l to create a link with the highlighted text.
+** Saving Scratch/Special Buffers
+- SPC-b-s
+  + Give it a file name
+** Links to Other org Files
+- Creating a Link to move to a headline in a DIFFERENT org file
+  1) Highlight the text in fileA that is a healine in fileB.
+  2) SPC-m-l file
+  3) Select fileB from dired buffer
+- Specifying a specific LINE NUMBER to jump to within a link
+  1) Move your cursor to the desired link
+  2) SPC-m-l
+  3) file:<file_name>::<line_num>
+** Hyperlinks (Links to Web resources)
+- Linking a Website
+  1) Highlight desired link text
+  2) SPC-m-l
+  3) Paste URL
+** Creating a Link to execute elisp script
+1) Highlight desired link text
+2) SPC-m-l
+3) elisp: ENTER
+4) Type elisp code or any function that's available in Emacs
+   - Example: Displaying your org-agenda through a link
+   - Example: Shell commands
+
+* Episode 11: Org Mode - Custom Link Types
+** Creating Custom Link Types (Youtube links as example)
+- Code for function
+#+BEGIN_SRC elisp
+(defun make-youtube-link (youtube_id)
+  (browse-url (concat "https://www.youtube.com/embed/" youtube_id))
+  )
+#+END_SRC
+- Then, in your config...
+  #+BEGIN_SRC elisp
+  (org-add-link-type "yt" #'make-youtube-link)
+  #+END_SRC
+** Youtube Links (org-mode built-in)
+1) Highlight desired link text
+2) SPC-m-l
+3) youtube: ENTER
+4) Paste in youtube video ID
+
+* Episode 18: Magit - Getting Started
+** Basic Magit Commands
+- Show git status page
+  + SPC-g g
+- Show Magit Help Page
+  + ?
+  + Press 'q' to quit this help window
+- Show diff for each file
+  + Hover over the file and press TAB
+- Staging/Unstaging
+  + Simply press 's' for staging and 'u' for unstaging files/diffs.
+  + To stage/unstage ALL files, 'S' and 'U'.
+
+* Magit (DistroTube and others)
+** Magit Status
+- Commits
+  + To display information on a specific commit, hover over the commit in the "Recent commits" section and press ENTER.
+  + Press 'q' to quit out of the buffer.
+  + Commiting Staged Changes:
+    - Press 'c' in the status page, and a git commit options menu opens up. Press 'c' again to commit the staged changes.
+    - Now you are prompted to type a commit message.
+    - To COMPLETE the commit: C-c C-c
+- Logs
+  + Type 'l' on the status buffer, and a git log minibuffer should appear with further options.
+- Push
+  + Type 'p' in the status page to open up the git push menu.
+  + This menu allows you to push to different remotes and/or branches.
+- Branches
+  + Type 'b' on the status page to open up the git branch menu.
+
+* Compiling Emacs From Source
+[[youtube:gv_C6SjuXRg][Video Link]]
+** Download Emacs
+- You can download Emacs at: https://www.gnu.org/software/emacs/download.html
+- Scroll down to the "GNU/Linux" section and click the link to use the "main GNU ftp server".
+- Then scroll all the way down and download the file named "emacs-27.1.tar.gz".
+  + The file name will change with different versions of course, but just realize that you want to download the .tar.gz file.
+** Extract Emacs Sources
+- You can compile/install Emacs in any directory you want, but it's nice to have a directory that stores all the packages you've built from source.
+- I chose to store these packages in =~/src=
+- Now, simply move the tarball from your Downloads folder into the src folder and untar it with: tar -zxvf emacs-27.1.tar.gz
+** Install Dependencies
+- sudo apt install build-essential imagemagick ripgrep libxpm-dev libjpeg-dev libgnutls28-dev libgif-dev libtiff-dev libacl1-dev libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev libmagickcore-dev libmagick++-dev libgpm-dev libselinux1-dev libm17n-dev libotf-dev libsystemd-dev libtool-bin pandoc texlive-latex-recommended texlive-extra-utils texlive-latex-extra texlive-latex-recommended cmake cmake-extras html2ps groff xhtml2ps
+** Configure the Build
+- Move inside the emacs directory with: cd emacs-27.1
+- Now configure the build with the command below:
+- ./configure --disable-silent-rules \
+--with-modules --with-file-notification=inotify --with-mailutils \
+--with-x=yes --with-x-toolkit=gtk3 --with-xwidgets --with-lcms2 \
+--with-imagemagick --with-xml2 --with-json --with-harfbuzz CFLAGS='-O3'
+** Compile and Install
+- Compile with: make -j$(nproc)
+- Install with: sudo make install
+
+* Introduction to Emacs Lisp
+** Learning Emacs Lisp 1
+[[youtube:RQK_DaaX34Q][Video Link]]
+*** What is Lisp?
+- That weird language with lots of parentheses?
+- A language an environment based on the idea of interactivity.
+- The syntax enables new language constructs to be defined.
+  + The language constructs that you define can also be at the same level as the ones that are built into the language or that other people have written in third party libraries.
+- The ultimate hacker language!
+*** Emacs Lisp
+- A dialect of Lisp for configuring and extending Emacs.
+- Much of Emacs' built-in functionality is written with it!
+- Has core features geared toward discoverability and extensibility.
+- APIs and data types for many types special to Emacs (buffers, windows, etc).
+*** Lisp Syntax
+- The beauty of Lisp comes from the simplicity of its syntax!
+- Lisp syntax is primarily composed of lists, symbols, and values.
+#+begin_src emacs-lisp
+;; A lisp function
+(defun the-meaning-of-life (answer)
+  (message "The answer is %s" answer))
+
+;; Newlines and whitespaces can be added anywhere in lists
+(list 1 2 3
+      4 5 6
+      7 8 9)
+#+end_src
+- The code can be treated as data!
+  + A lisp expression can be thought of as a list that has symbols, values, and other expressions within them.
+  + The parentheses are the delimeters for expressions, which is nice because it allows us to space the arguments however we want. All the space gets ignored by the parser.
+- You shouldn't be afraid of editing code with parentheses, there are packages for that :)
+*** Values (or "Objects")
+- Any _value_, or _object_, has a type. It also has a textual representation that may or may not be "readable"!
+**** Lisp Types
+- Strings
+- Numbers (both integer and float)
+- Symbols
+- Cons cells
+- Arrays and Vectors
+- [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Programming-Types.html][... and more]]
+**** Emacs Types
+- There are many types specific to Emacs as well, most don't have a code representation:
+  + Buffers
+  + Windows
+  + Frames
+  + Threads
+  + Keymaps
+  + ...
+- Things we do with these types can affect the Emacs interface.
+#+begin_src emacs-lisp
+;; Get the previous buffer and switch to it
+(switch-to-buffer (other-buffer))
+#+end_src
+- [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Editing-Types.html][A list of Emacs Editing Types]]
+*** Forms and Evaluation
+- A _form_ is any lisp object that can be evaluated.
+**** How Evaluation Works
+- Evaluation works differently for:
+  + Lists
+  + Symbols
+  + All other object types
+- Some are _self-evaluating_, meaning that they return their own value.
+#+begin_src emacs-lisp
+
+;; Primitives are usually self-evaluating
+42
+
+"Hello!"
+
+;; Not self-evaluating!
+buffer-file-name
+
+;; Evaluates a function!
+(+ 300 11)
+
+;; Some representations can't be evaluated!
+#<buffer Emacs-Lisp-01-org>
+#+end_src
+**** The "Environment"
+- Everything is evaluated in terms of Emacs Lisp's global environment.
+- Pro: You can change anything in the environment as you go.
+- Con: Your environment might get "dirty" over time in your Emacs session.
+#+begin_src emacs-lisp
+;; Set the initial value
+(setq efs/our-nice-variable "Hello System Crafters!")
+
+;; Change it to something else (even a different type!)
+(setq efs/our-nice-variable 1337)
+#+end_src
+**** Expressions
+- Lisp is an expression-based language, almost all forms return a value.
+#+begin_src emacs-lisp
+;; A very useful function...
+(defun add-42 (num)
+  (+ num 42))
+
+;; It returns the result
+(add-42 58)
+
+;; Using the result in another call
+(* (add-42 58) 100)
+#+end_src
+*** Symbols
+- A _symbol_ is also a type of object, but it's not self-evaluating.
+- Symbols can contain alphanumeric characters plus many others:
+  + + - = * / _ ~ ! @ $ % ^ & : < > {  } ?
+- This gives you the ability to ascribe meanings to symbols based on the characters they contain. Some examples:
+  + =bui-keyword->symbol= Convert from one type to another.
+  + =efs/some-name= Define a "namespace" for the symbol.
+  + =*pcache-repositories*= Indicates a global variable (not common in Emacs Lisp).
+  + =string== Check if someting is equal to something else.
+- When a symbol is evaluated, it returns the variable value associated with that binding:
+#+begin_src emacs-lisp
+
+;; The example we saw before
+buffer-file-name
+#+end_src
+- Function names can't be evaluated like this though:
+#+begin_src emacs-lisp
+get-file-buffer
+#+end_src
+- [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Symbol-Type.html#Symbol-Type][The Symbol type man page]]
+*** Infix vs Prefix
+- Lisp expressions use _prefix_ notation:
+#+begin_src emacs-lisp
+
+(+ 300 (- 12 1))
+#+end_src
+- Essentially, when defining a list, the first symbol evaluate to a function.
+- Why is this useful? Because it puts all functions and operators at the same level of importance, even the ones you define!
+  + It also makes the evaluation of these lists more predictable.
+*** Exercise/Chat Tips
+#+begin_src emacs-lisp
+
+;; Concat two strings
+(concat "Hello " "Emacs!")
+
+;; Simple list
+'(1 2 3)
+
+;; Another way to create a list
+(list 1 2 3)
+
+;; A vector
+[1 2 3]
+
+;; Check if something's a string
+(stringp "Am I a string?")
+
+;; Check the type
+(type-of 40)
+#+end_src
+** Learning Emacs Lisp 2
+Video Link
+*** ii

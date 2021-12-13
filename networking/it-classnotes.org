@@ -1,0 +1,1009 @@
+#+TITLE: IT Class Notes - Rutgers FALL2020
+
+* Java Network Programming
+** Java Socket Programming Part 1 (TCP)
+[[youtube:BWjGQlIkgT4][Video Link]]
+*** Some Basic Vocabulary
+- IP Address: Unique ID on the (local) network. Let's you identify different computers on the network.
+- Port: Unique number on your computer linked to your program (instead of another program that is running).
+- Packet: Unit of data sent from one computer to another.
+*** Conceptual Understanding
+** Java Socket Programming Part 2 (TCP)
+[[youtube:h2zi2lVNhtk][Video Link]]
+*** Server Code
+#+BEGIN_SRC java
+// Client connects to our server and it tells the client what the date is.
+public class DateServer {
+    private static final int PORT = 9090;
+
+    public static void main(String[] args) throws IOException {
+        ServerSocket listener = new ServerSocket(PORT);
+
+        Socket client = listener.accept();
+
+        // PrintWriter object will allow us to output information to client.
+        PrintWriter out = new PrintWriter(client.getOutputStream(), true);
+        out.println( (new Date()).toString() );
+
+        // Close the Socket and ServerSocket
+        client.close();
+        listener.close();
+    }
+}
+#+END_SRC
+*** Client Code
+#+BEGIN_SRC java
+public class Client {
+    private static final String SERVER_IP = "127.0.0.1";
+    private static final int SERVER_PORT = 9090;
+
+    public static void main(String[] args) throws IOException {
+        Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+
+        // How we recieve messages from the server.
+        BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+        String serverResponse = input.readLine();
+
+        JOptionPane.showMessageDialog(null, serverResponse); // Display server message
+
+        // Close socket.
+        socket.close();
+        System.exit(0);
+    }
+}
+#+END_SRC
+
+
+* HTTP
+** HTTP Crash Course & Exploration
+[[youtube:iYM2zFP3Zn0][Video Link]]
+*** What is HTTP?
+- Hyper Text Transfer Protocol
+- Communication between web servers & clients.
+- HTTP Requests and Responses.
+- Lading pages, form submit, Ajax calls.
+*** HTTP is Stateless
+- Every request is completely INDEPENDENT.
+- Similar to transactions.
+- Programming, local storage, cookies, sessions are used to create enhanced user experiences.
+  + But, at its core, HTTP does not remeber previous transactions.
+*** What is HTTPS?
+- Hyper Text Transfer Protocol Secure
+- Data sent in encrypted by either SSL (Secure Sockets Layer) or TLS (Transport Security Layer).
+- A web server can enforce HTTPS by installing a certificate.
+*** HTTP Methods
+- GET
+  + Retrieves data from the server.
+  + Ex) Loading a html page, loading assets such as images.
+- POST
+  + Submit data to the server. Typically this data gets stored in a database.
+  + Ex) Submitting a contact form, creating a new blog post.
+- PUT
+  + Update data already on the server.
+  + Ex) Editing a blog post.
+- DELETE
+  + Deletes data from the server.
+*** HTTP Status Codes
+- 1xx : Informational
+  + Request received / Processing
+  + 200 - OK
+- 2xx : Success
+  + Successfully Received, understood, and processed
+  + 201 - OK Created
+- 3xx : Redirect
+  + Further action must be taken / Redirect
+  + 301 - Moved to new URL
+  + 304 - Not modified (cached version)
+- 4xx : Client Error
+  + Request does not have what it needs
+  + 400 - Bad Request
+  + 401 - Unauthorized Request
+  + 404 - Not found
+- 5xx : Server Error
+  + Server failed to fulfil an apparent valid request
+  + 500 - Internal Server Error
+
+
+* Lecture 1
+#+date: <Tue 09-01-2020>
+** What is the Internet?
+*** Terms
+- An internet is a network of networks, THE Internet is a global internet based on the IP (Internet Protocol) protocol.
+- Protocols are just rules for interaction.
+- Difference between channel and media: think of separating a physical hard drive into 3 different logical drives.
+- Router: decides where to send data next. Allows hosts to talk to other hosts.
+- Core vs Edge
+  + Core Networks, think ISPs. Relays data from one user to another (from edge to edge)
+  + Edge, think end users or a company
+*** Layering
+- Use layers to hide complexity; each layer implements a service.
+- Protocols: Each layer communicates with its peer by a set of rules.
+- Each layer implements a service via its own internal layer protocols and relies on services provided by layer below.
+*** Protocols
+- The rules of communication that allows us to go from architecture to an actual service.
+- Protocols define the format, order of messgaes sent and received among network entities, and actions taken on message transmission, receipt.
+- What kind of protocols are there?
+  + LOTS. Ex) FTP, HTTP, TCP, IP, etc.
+*** ISO OSI 7-Layer Architecture
+- The 7 Layers (top to bottom): Application, Presentation, Session, Transport, Network, Data Link, Physical
+- Each layer performs a well-defined function.
+  + Single Responsibility. Think: Encapsulation in OOP design.
+- Layers should be defined to minimize information flow from across the interfaces.
+*** ISO's Design Principles
+1. Single Responsibility / Encapsulation
+2. Interface Segregation / Abstraction
+3. Dependency Inversion / Modularity
+*** Layer 0: Physical Layer
+- Functions
+  + Transimission of a raw bit stream
+  + Forms the physical interface between devices
+*** Layer 1: Data Link Layer
+- Functions
+  + Provides reliable transfer of information between two adjacent nodes.
+*** Layer 2: Network Layer
+- Responsible for routing decisions
+  + Dynamic vs Fixed Routing
+- Allows you to send information to machines you're not directly connected to.
+*** Layer 3: Transport Layer
+- Provides reliable end-to-end communication.
+- Concerned with message delivery.
+- Often called the first of the end-to-end layers. This is where we enter the picture (if we're writing networking code)
+- A socket is a machines abstraction of the transport layer.
+*** Layer 4: Session Layer
+- Groups several user-level connections into a single "session".
+  + Ex) Banking session, Network meetings
+- Performs synchronization between several communicating applications or logical transmissions.
+*** Layer 5: Presentation Layer
+- Performs specific functions that are requested regularly by applications.
+- Ex) Encryption, ASCII to Unicode, etc.
+*** Layer 6: Application Layer
+- Protocols are application-dependent.
+*** A Simplified Model: TCP/IP Layering Architecture
+- Has only 4 Layers: Application, Transport, Internet/Network, Host-to-Net
+*** Encapsulation
+- Every layer has a little bit of metadata.
+- This data should be "snapped off" before going up to an upper layer.
+- Switch vs Router
+  + Switch, data link layer. Can send data between machines that are directly connected to one another.
+  + Router, network layer
+  + Switches are built-in to routers these days.
+
+
+* Lecture 2
+#+date: <Thu 09-03-2020>
+** ISO OSI 7-Layer Stack
+- A model/abstraction/standard that helps to organize/guide creation and use of networking implementations.
+- Application Layer
+  + Provides a service for the user.
+- Presentation Layer
+  + Translates/manipulates/encrypt/decrypt/decodes information.
+- Session Layer
+  + Synchronizes/manages multiple connections or messages.
+- Transport Layer
+  + Concerned with message delivery.
+  + First end-to-end layer.
+  + Transport Layer Abstraction: *Socket*
+- Network Layer
+  + Routes (finds/maintains paths) data toward target (i.e. provides indirect "connection")
+- Data Link Layer
+  + Communicates with a host you are DIRECTLY connected to (point-to-point link).
+- Physical Layer
+  + Data to radiation
+- Terms
+  + Host: A user machine interacting with the network (often using applications).
+  + Edge Network: Network connecting multiple hosts.
+  + Core Network: Machines that relay traffic.
+** What Is a Socket?
+- A *socket* is the interface (door) between your program (application) and the network.
+- It's a transport layer abstraction.
+- What do you need to know about a server before being able to connect to it?
+  + IP Address, identifies the server.
+  + But once you get data to the server machine using IP address, you still need to know which process that's running on the machine (there could be hundreds) will receive the data.
+    - Port Number, identifies the process.
+** When Do We Use Sockets?
+- HTTP is a protocol that you use to request and recieve web pages.
+- ServerSocket vs Socket (in Java)
+  + ServerSocket ONLY listens for connection requests. Can't send and recieve data.
+    - If client connection is granted, it returns a client Socket and tells the client where to send the data.
+    - You don't want to build sockets on low-number ports. Try to number them 5000+
+    - The accept call does not return unless a client connects to it. It's called a _blocking call_
+    - Receives connection requests with accept()
+    - The accept() call then returns a Socket connected to the client.
+  + Socket sends and receives data ONLY.
+    - Connect with new()
+** TCP vs UDP
+- Under TCP you have a connection and the client talks exclusively to that server that it's connected to. TCP concept is like a phone connection.
+- UDP concept is more like a mailbox. Every message is explicitly addressed.
+- TCP
+  + Connection Oriented
+  + Abstract a "direct" connection (even know we don't have a direct connection)
+  + Abstract a byte-stream communication channel
+  + Stream Sockets
+  + Slower than UDP but very reliable.
+  + Good for long messages where packets CANNOT be lost.
+  + Data always arrives in order.
+- UDP
+  + Connectionless
+  + Data communication in discrete packets
+  + Datagram sockets
+  + Lower Latency. Fast, but a little unsafe.
+  + A Datagram Socket is not associated with any destination. Packets can be sent to any host, any destination port #.
+  + Good for small messages/time sensitive messages.
+  + Transmitted data may be received out of order, or lost.
+
+
+* Lecture 3
+#+date: <Thu 09-10-2020>
+** UDP Java Programming
+- DatagramSocket
+- DatagramPacket
+** Threads
+*** Threads in Network Programming
+- A *thread* is essentially an asynchronous function.
+- Used to support concurrent execution within an application.
+- Scheduled similarly to processes in the operating system.
+- Have their own stack, share heap.
+- Multi-core systems are now standard, even in mobile devices, meaning that concurrency is available to exploit.
+- We often need threads in network programming. Without threads, a server can only deal with one client at a time.
+- A server should focus on accepting connection requests, but once it accepts, it should hand over the socket to a client handler thread.
+- Threads are needed in network programming due to:
+  + Blocking nature of many socket IO calls.
+  + Arbitrary size and nature of user (client) messages/work.
+  + Arbitrary arrival time of new connection requests.
+*** Threads in Java
+- Create a class that extends Thread OR implements Runnable
+  + Must implement the run() method.
+- Instantiate this class ...
+- Invoking run() method starts a new execution path.
+- You should keep track of all the threads you are running and eventually join() on them. The OS does not deallocate a thread unless you tell it to.
+  + Keep them in some sort of data structure (Linked List, Thread Pool, etc.)
+  + Thread Pools in Java
+*** Example for Using Threads
+- Server main thread waits for client requests.
+- ServerSocket in main accepts()
+  + On successful connection... create new client handler thread and pass new Socket to that thread.
+*** Join()
+- Block until thread that is being joined() on is done running.
+- Good "hygiene". Lets the OS know that you are done with that thread, so it's resources (stack) can be reclaimed.
+*** Thread Pitfalls and Mutexes
+- Race Condition
+  + Threads need to read from the heap into local memory (registers) in order to make changes and they can overlap on writebacks.
+  + Shared variables get corrupted when 2 or more threads modify them at the same time.
+  + The 'synchronized' keyword forces only EXACTLY ONE thread to use whatever the keyword applies to at the time.
+- Synchronized Methods
+  + Creates a mutex on the instance
+  + No two synchronized methods may be executed simultaneously.
+  + May be convenient, but not very precise.
+- Synchronized Blocks
+  + Automatically creates a mutex on the synchronized object (member).
+** Core Networks
+- HOW are we going to relay data?
+*** Circuit Switching
+- Basically the view that TCP is trying to provide (a direct connection).
+- End-to-end resources reserved for transmission. Ex) Telephone Network.
+  + Once the connection is formed, you have end-to-end communication until you "hang up".
+  + Resources are dedicated to maintain connection for its lifetime.
+- Bytestream-like behavior. Since the target is set, as data comes in, relay it immediately.
+- Long set-up time, but once you actually get the circuit set up, it is lightning quick to deliver the message.
+*** Message Switching
+- Basically the view that UDP tries to provide. Like a postal service.
+- Faster than circuit switching, but not as reliable/safe.
+- Target is set per message. Each is routed individually.
+- Messages are stored entirely at each router/switch (node) before being forwarded.
+- Short set-up time, no guarantees, sensitive to error (you either get the whole message or nothing at all), slow to relay.
+*** Packet Switching
+- Target is set per packet.
+- Each packet is routed individually.
+- Packets are stored at each router/switch (node) before being forwarded.
+  + But, by virue of being smaller, a router can relay one packet form a message while recieving another.
+- Short set-up time, no guarantees, resilient to error, faster to relay than message switching, requires less storage.
+- Fairly common relay method.
+
+
+* Lecture 4
+#+date: <Tue 09-15-2020>
+** Switching
+- Comparisons
+  1. Header Overhead
+     Circuit < Message < Packet
+  2. Transimission Delay
+     + Short Bursty Messages
+       Packet < Message < Circuit
+     + Long Contiguous Messages
+       Circuit < Message < Packet
+** Circuit Switching
+- There is still multiplexing going on (multipe users).
+- Two Ways to Multiplex the Resources (Divide network traffic)
+  1. FDM: Frequency Division Multiplexing
+  2. TDM: Time Division Multiplexing
+** Packet Switching: Statistical Multiplexing
+- Sequence of A & B packets does not have a fixed patter, gets shared on demand.
+** Packet Switching vs Circuit Switching
+- Packet Switching allows more users to use the network!
+** Network Delay Analysis
+- We need a way to build abstract models of network performance.
+- Observe where real networks deviate from the model.
+** Units
+- In networking, we deal mostly in base-10.
+** Four Sources of Packet Delay
+1. Node Processing Delay
+   - Execute protocol code.
+   - Check bit errors.
+   - Determine output link.
+2. Queuing
+   - Time waiting at output link for transmission.
+   - Depends on congestion level of router.
+3. Transimission Delay
+   - Time to get bits on the wire
+4. Propagation Delay
+- Processing and Queuing takes the longest.
+
+
+* Lecture 5
+#+date: <Thu 09-17-2020>
+** Nodal Delay
+- C + N / B
+  + C: Circuit setup time
+  + N: Number of bytes in entire message
+  + B: Bandwith (data rate)
+** Packet Switching Time
+- S: number of Switches between source and target
+- p: size of packet
+- h: size of header
+- B: Bandwith (data rate)
+** Packet Switching vs Circuit Switching
+- Packet switching compensates for an increase in S (number of switches) because each switch doesn't have to wait for the ENTIRE message.
+- Decreasing packet size helps deal with an increase in S, BUT
+  + When metadata becomes the same size or larger than packet size, it's no longer beneficial to decrease packet size.
+** Application Architectures
+*** Client-Server Architecture
+*** Pure P2P (Peer-to-Peer) Architecture
+- No ALWAYS-on server.
+- Arbitrary end systems directly communicate.
+- Service/Resource discovery is always an issue with P2P.
+- Highly scalable but tough to manage.
+*** Hybrid of Client-Server and P2P
+- Ex) Skype, Instant Messaging
+** Processes Communicating
+- Process: program running within a host.
+- Client Process: process that initiates communication.
+- Server Process: process that waits ...
+** What Transport Service Does an Application Need?
+- Data Loss
+  + Some can tolerate some loss (eg. audio)
+  + Others require 100% reliable data transfer (eg. file transfer)
+- Timing
+- Throughput
+- Security
+  + Encryption, Data integrity
+** Web and HTTP
+- Web page consists of objects.
+  + Object can be HTML file, JPEG image, Java applet, audio file, etc.
+- Web page consists of base HTML-file which includes several referenced objects.
+- Each object is addressable by a URL.
+  + URL consists of a scheme (http://), host name (www.rutgers.edu), path (...)
+- HTTP is "stateless"
+  + Server maintains no information about past client requests.
+*** HTTP Connections
+1. Nonpersistent HTTP
+2. Persistent HTTP
+   - Multiple objects can be sent over a single TCP connection.
+- Two types of HTTP messages: request, response
+
+
+* Lecture 6
+#+date: <Tue 09-22-2020>
+** HTTP: Hyper Text Transfer Protocol
+*** Review From Last Class
+- Switching
+  1. Packet Switching
+  2. Message Switching
+  3. Circuit Switching
+- Nodal Delay
+  + Queueing Delay     : Time to get service. Amount of time the bytes are going to sit around waiting until the hardware on the switch/router can deal with it.
+  + Processing Delay   : Time to figure out what to with the message (bytes).
+  + Transmission Delay : Time to get the bytes on the wire and moving. What you have to deal with the most.
+  + Propagation Delay  : Time for radiation (physical manifestation of the data) to get to where it's going. Often times negligible or known.
+- Circuit Switching Formula
+  + C + (N/B)
+  + C => Circuit Setup Time
+  + B => Bandwith (Mbps)
+  + N => Number of bytes to send
+- Packet Switching Formula
+  + (S+1)((p+h)/B) + (ceil(N/p)-1)((p+h)/B)
+      1st Packet         Other packets
+  + We can simplify this formula...
+  + ((p+h)/B)*(S+ceil(N/p))
+    - h => header size
+    - p => packet size
+    - S => number of switches
+- Application Layer: HTTP
+  + Stateless (no ordering/dependencies between messages)
+  + Often uses TCP (although it's not an explicit part of the protocol)
+  + Often used to relay web pages (more broadly, it's used to relay resources)
+  + ALWAYS sends a response for each request
+*** Maintaining State: Cookies
+- Most websites uses cookies.
+- Four components:
+  1. Cookie header line of HTTP response message.
+  2. Cookie header line in HTTp request message.
+  3. Cookie file kept on user's host managed by user's web browser.
+  4. Back-end database at Web site.
+- First time you visit a website, the site's initial HTTP response gives you a cookie. The browser stores that cookie and sends it in every HTTP request to that website thereafter.
+- Cookies can provide common web services like:
+  + Authorization
+  + Shopping carts
+  + Recommendations
+  + User session states (Web e-mail)
+- ASIDE: Cookies and Privacy
+  + Cookies permit sites to learn a lot about you.
+  + You may supply name and e-mail to sites.
+*** Web Caches (Proxy Server)
+- THINK: How do we hide latency in computers?
+  + It takes between 40-90 ms to access a file on a hard drive, so how does our CPU appear to be so fast?
+  + ANSWER: Caching. We store a copy in a faster form of memory.
+  + We do the same thing when accessing data on the Internet. We make nearby copies of data on a faster machine.
+- GOAL of Web Caches: Satisdy client request without involving the origin server.
+- User sets the browser: Web accesses via cache.
+- Browser sends all HTTP requests to cache.
+  + If the object is in cache, cache returns the object.
+  + Else, cache requests object from origin server, then returns the object to the client.
+- The cache acts as both client AND server.
+- Typically, cache is installed by ISP (university, company, residential ISP).
+- Why web caching?
+  + Reduce response time for client request (speed things up).
+  + Reduce traffic on an institution's access link.
+  + Internet dense with caches: enable "poor" content providers to effectively deliver content (but, so does P2P file sharing).
+*** Conditional GET
+- GOAL: Don't send object if cache has up-to-date cached version.
+- Cache: Specify date of cached copy in HTTP request
+  + If-modified-since: <date>
+- Server: Response contains no object if cached copy is up to date.
+  + HTTP/1.0 304 Not Modified
+*** FTP: File Transfer Protocol
+- These days, everyone uses STP, which is essentially FTP but with end-to-end encryption.
+- Just like HTTP typically uses port 80, FTP usually uses port 21.
+- Client/Server Model
+  + Client: Side that initiates transfer (either to/from remote).
+  + Server: Remote host
+- FTP Commands & Responses (in slides)
+** Electronic Mail (Email)
+*** Basics
+- E-mail is a lot like FTP. And if you have FTP, it is easy to build E-mail on top of it.
+- Send an E-mail : Put text file on a remote server.
+- Read and E-mail: Log in to server and get file.
+*** Components
+- Three major components:
+  1. User agents
+  2. Mail servers
+  3. *Simple Mail Transfer Protocol (SMTP)*
+- User Agent
+  + AKA "mail reader"
+  + Composing, editing, reading mail messages
+  + Ex) Eudora, Outlook, Mozilla Thunderbird
+  + Outgoing, incoming messages stored on server
+- Mail Servers
+  + _Mailbox_ contains incoming messages for user.
+  + _Message Queue_ of outgoing (to be sent) mail messages.
+  + _SMTP Protocol_ between mail servers to send email messages.
+    - Client: sending mail server
+    - Server: recieving mail server
+*** SMTP
+- Uses TCP to reliably transfer email message from client to server, port 25.
+- Three phases of transfer:
+  1. Handshaking (greeting)
+  2. Transfer of message
+  3. Closure
+*** Mail Message Format
+- SMTP: Protocol for exchanging email messages.
+- RFC 822: Standard for text message format
+- Mail Message Structure:
+  <Header>
+  blank line
+  <Body>
+- Header
+  + To:
+  + From:
+  + Subject:
+- Body
+  + The "message". ASCII characters only
+- Sending Multimedia (Objects that are not plain text)
+  + _MIME (Multipurpose Internet Mail Extensions)_
+  + Additional lines in message header delcares MIME content type.
+  + MIME types were first generated for email, but then added to HTTP.
+*** Mail Access Protocols
+- SMTP: Delievry/Storage to reciever's server.
+- Mail Access Protocol: Retrieval from server
+  + _POP: Post Office Protocol_
+    - Authorization (agent <--> server) and download
+  + _IMAP: Internet Mail Access Protocol_
+    - More features, more complex
+    - Manipulation of stored messages on server
+  + _HTTP_: Gmail, Hotmail, Yahoo! Mail, etc.
+** DNS: Domain Name System
+*** Basics
+- DNS is built on top of the internet and allows us to TRANSLATE nice, human-readable host names (such as www.yahoo.com) into IP addresses.
+- Distributed database implemented in hierarchy of many name servers.
+- Why not centralize DNS?
+  + Traffic volume for some websites would be far too high.
+  + Doesn't scale!!
+- DNS Services
+  + Hostname to IP address translation.
+  + Host aliasing
+  + Mail server aliasing
+  + Load distribution
+*** Domain Name Hierarchy
+- Caching is built into DNS by what "level" of name you're trying to resolve to an IP address.
+- There are generic domains and country domains.
+*** Distributed, Hierarchical Database
+- _Root DNS Servers_: About 13 of these around the planet. They hold locations of _top-level domain servers_ (.com DNS servers, .org, .edu)
+- _Authoratative DNS Servers_
+  + Ex) yahoo.com DNS servers
+*** Local Name Server
+- Does not strictly belong to the hierarchy.
+- Each ISP (residential ISP, company, university) has one.
+  + Also called "default name server"
+- When host makes DNS query, that query is sent to its local DNS server.
+  + Acts as proxy, forwards query into hierarchy.
+*** Iterative vs Recursive DNS Name Resolution
+- All name servers have their own IP address.
+- Iterated Query
+  + Client's responsibility to track down the IP. Client looks up failed requests.
+  + Requires a lot of network traffic, but less load on the name server.
+- Recursive Query
+  + Puts burden of name resolution on contacted name server. Failing name server is responsible for resolving requests.
+  + Might be less network traffic overall, but more load on the name server.
+*** DNS: Caching and Updating Records
+- Once any name server learns mapping, it caches that mapping.
+  + Cache entries timeout (dissapear) after some time.
+  + Top-Level Domain (TLD) servers typically cached in local name servers. Thus root name servers are not often visited.
+- Downside of DNS caching: Allows for the possibility of stale bindings.
+  + Try to help this by expiring bindings every so often and when the binding capacity is reached.
+*** DNS is an Application Layer Protocol
+- Clients communicate with DNS servers using either TCP or UDP on port 53.
+- *nslookup*
+  + Linux command to query DNS.
+  + nslookup <hostname>
+- *dig*
+  + Another Linux DNS lookup utility.
+*** Boostrapping DNS
+- How does a host contact the name server if all it has is the name and no IP address?
+- IP address of at least 1 nameserver must be given a priori.
+  + File /etc/resolv.conf in UNIX includes the Canonical 13 root nameserver addresses.
+
+
+* Lecture 7
+#+date: <Thu 09-24-2020>
+** Transport Layer
+*** Transport Services and Protocols
+- Transport Layer is reponsible for message delivery.
+- Provide logical communication between app processes running on different hosts.
+- Transport protocols run in end systems.
+  + Send Side: Breaks app messages into segments, passes them to network layer.
+- Receive Side: Reassembles segments into messages, passes to the app layer.
+- More than one transfer protocol available to apps.
+- Reliable, in-order delivery   : TCP
+  + Congestion control, flow control, connection setup
+- Unreliable, unordered delivery: UDP
+  + No-frills extension of "best effort" IP
+- Services NOT available:
+  + Delay guarantees
+  + Bandwidth guarantees
+  + Jitter (variance) guarantees
+*** Transport vs Network Layer
+- Network Layer: Logical communication between hosts. Worried about finding that "route" between hosts.
+- Transport Layer: Logical communication between processes. Relies on and enhances network services.
+*** Multiplexing/Demultiplexing
+*** User Datagram Protocol (UDP)
+**** Basics
+- No frills, bare bones, Internet transport protocol.
+- UDP segments may be lost, delivered out of order to app.
+- Connectionless
+  + No handshaking between UDP sender and reciever.
+  + Each UDP segment handled independently of others.
+- UDP Advantages
+  + No connection establishment (which can add delay).
+  + Small segment header
+  + No congestion control; UDP can blast away as fast as desired.
+- UDP is often used for streaming multimedia apps (loss tolerant, rate sensitive).
+- Often UDP uses: DNS, SNMP
+- For reliable transfer over UDP, add reliability at the application layer. You can build whatever you want on top of it.
+**** UDP Checksum
+- Not great, but allows for some error-checking in UDP.
+*** Principles of Reliable Data Transfer
+**** How do we go from UDP to TCP?
+- If we wanted to build TCP starting from UDP (implement reliability), how would we do that?
+- If your medium of communication isn't reliable, you basically need infinite acknowledgment messages in order to confirm that a message was recieved.
+- _Acknowledgements (ACKs)_: Receiver explicitly tells sender that pkt received OK.
+- _Negative Acknowledgements (NAKs)_: Receiver explicitly tells sender that pkt had errors.
+- PROBLEM: Sender sends one packet and then has to WAIT for receiver's response. We can only send 1 message at a time, otherwise ACKs/NAKs may get out of order and you run the risk of interpreting one response as pertaining to a different message.
+  + SOLUTION: We must add a _sequence number_ to packets in order to disambiguate messages.
+- Add error tolerance by _packetization_
+  + If one packet is lost, it is not as expensive to retransmit.
+- _Pipelining_: Sender allows multiple, "in-flight", yet-to-be-acknowledged pkts.
+  + Range of sequence numbers must be increased.
+  + Buffering at sender and/or receiver.
+  + Two generic forms of pipelined protocols:
+    1. _go-Back-N_
+       - Each packet is ACKed individually and retransmitted individually (if necessary).
+       - Good for high-bandwidth, short messages.
+    2. _Selective Repeat_
+       - Packets are viewed as a stream, only the oldest received is ACKed, any older are presumed lost and are sent again.
+       - Good for low-bandwidth, long messages.
+- Major questions we need to answer:
+  + How many packets to send at once before getting an ACK?
+  + How long to wait for ACKs before retransmitting?
+
+
+* Lecture 8
+#+date: <Tue 09-29-2020>
+** Last Class Review
+- DNS
+  + Appplication Layer protocol for translating domain names into IP addresses.
+  + Recursive vs. Iterative
+  + Layers: Root, Top-Level, Authoratative, Non-Authoratative, Local (Cached)
+- ACK/NACK
+  + ACK OK messages.
+  + NACK corrupted messages.
+  + But... coordinating armies/Godel Incompleteness... etc.
+    - Retransmit on timeout (but how long should we wait??)
+- Retransmit
+  + _Selective Repeat_: One ACK/NACK per message (packet)
+  + _Go-Back-N_: One ACK/NACK per BATCH of messages (packets)
+- Packetization and Pipelining
+  + Packetization allows for pipelining.
+  + _Pipelining_ is a technique in which multiple requests are written out to a single socket without waiting for the corresponding responses.
+    - Multiple unACKed messages/quanta/data (packets!) at once.
+  + _Packetization_: break messages into mini sub-messages that are each individually addressed.
+  + This increases utilization of the network. Allows for multiple hosts to use the network at once.
+- Two open questions:
+  1. How long to wait for ACKs before retransmitting?
+  2. How many packets to send at once before getting an ACK?
+** Selective Repeat in Action
+** Transmission Control Protocol (TCP)
+*** Connection Establishment
+  SYN     ->
+                <- SYN/ACK
+  ACK/ACK ->
+*** Connection Tear-Down
+- Two double handshakes.
+*** TCP Retransmission
+**** Major Question
+- How long to wait for timeout?
+  + Before sending data, you have a rough idea how long it takes to send a message and recieve a response.
+  + _Roundtrip Time (RTT)_ estimate generated by initial handshake.
+  + However, you get new estimates of RTT every time an ACK comes in!
+    - Using new RTT only is dangerous, since network can fluctuate.
+    - Using old RTT only is dangerous... since network can fluctuate.
+  + How to sensibly integrate new observations with old?
+    - _Smooth RTT (SRTT)_ ... weight old data more than new.
+    - But, how to integrate the effect of retransmission (getting a lot of retransmissions, you may want to act differently)?
+    - SOLUTION: Use one of these two algorithms
+      1. Karn's Algorithm
+         - Swap modes between SRTT and _Retransmission Timeout (RTO)_
+      2. Jacobson/Karel's Algorithm
+         - Try to profile deviation from expectation.
+**** RTT Formula
+**** Karn's Algorithm
+**** Jacobson/Karel's Algorithm
+
+
+* Lecture 9
+#+date: <Thu 10-01-2020>
+** Last Class Review
+- ACK/NAK
+  + Selective Repeat: ACK each packet individually.
+  + Go-Back-N: ACK packets as a unit (newest ACK is presumed to cover previous packets).
+- Timeout
+  + Rountrip Time (RTT)
+    - 3-way handshake gives an initial estimate.
+    - Every ACK is another RTT estimate... so how do we integrate them together?
+      + Smoothed RTT (SRTT): Essentially a weighted average
+      + Karn's: Treat retransmissions differently than successful traffic.
+      + Jacobson/Karel: Model deviations from expected RTT
+** TCP - Flow Control
+- Deals with the load on remote host.
+- Partly provided for by SEQNUM
+  + Receiver ACKs amount of bytes sent to its connection and includes a window (buffer) size.
+  + Windows is how many bytes the receiver has reserved for sender messages.
+  + Essentially, the receiver can slow down the sender.
+- _Piggybacking_
+  + Allows for more efficient bidirectional communication.
+** TCP - Congestion Control
+*** Basic Concepts
+- Deals with the load on network bandwidth.
+- Informally, too many sources sending too much data too fast for the network to handle.
+- Manifestations
+  + Lost packets (buffer overflow at routers)
+  + Long delays (queueing in router buffers)
+- RECALL: Network Layer is responsible for congestion control.
+- In TCP/IP
+  + ...
+- GOAL: Fully (fairly) use the resource (bandwidth)
+- GOAL: Achieve self-clocking state
+*** TCP Congestion Window
+- TCP introduces a second window, called the "congestion window".
+- This window maintains TCP's best estimate of amount of outstanding data to allow in the network to achieve self-clocking.
+- Sending Size = MIN(congestion control window, flow control window)
+- Increase the usage (window size) to keep probing the network. Slow down if we start running into issues.
+*** TCP Slow Start
++ _Maximum Segment Size (MSS)_ - The maximum size a TCP packet can be (including header)
++ When connection begins CongWin = 1 MSS
++ But the available bandwidth may be much greater than that, so we want to exponentially increase this rate, until first loss occurs.
++ So the initial rate is slow, but ramps up exponentially fast. Wants to find the maximum sending rate as fast as possible to minimize the time we're sending at slower rates.
+*** Timeout
+- Can we do better at detecting congestion than using timeout?
+- Maybe we can get help from the receiver.
+  + Receiver sends duplicate ACK ...
+*** TCP Fast Retransmit
+*** TCP Fast Recovery
+- IDEA: Don't do a slow start (back to 1 MSS) after a fast transmit.
+*** TCP Recap
+**** Timeout Computation
+**** Congestion Control
+*** Fairness/Quality of Service in UDP and TCP
+*** TCP Packet Format
+
+
+* Lecture 10
+#+date: <Tue 10-06-2020>
+** Last Class Review
+- TCP Services:
+  1) Reliability
+  2) Ordering
+  3) Flow Control
+     + ACK with byte length allowed in next window. The remote host tells the sender how much it can take in the next congestion window.
+  4) Congestion Control
+     + Limit packet pipelinging by accept rate.
+     + Control window size and rate based on ACK.
+- Retransmit Strategies
+  + Go-Back-N
+    - ACK furthest received in order, even if others are RECVed, don't ACK unless in order (retransmit all after one ACKed).
+  + Selective Repeat
+    - ACK each packet individually (retransmit ones whose ACK is timed out).
+- Congestion Window Size
+  + Start at 1 MSS (Maximum Segment Size)
+  + Increase
+    - On ACKed window
+    - At start/hard fail: Exponential
+    - After soft fail: Linear
+  + Decrease
+    - Timeout (hard fail): Reset to 1 MSS & start over (in order to allow dynamic equilibrium as hosts join).
+    - 3 Duplicate ACKs (soft fail): Update threshold estimate to be less than current rate, drop down current rate.
+** Introduction to Queueing Theory
+*** Queueing Theory for Studying Networks
+- View network as collections of queues.
+- Queueing Theory provides probabilistic analysis of these queues.
+- Examples:
+  + Average length
+  + Average waiting time
+  + Probability queue is at a certain length
+  + Probability a packet will be lost
+*** Kendall Notation
+**** Six Parameters in Shorthand
+1) Arrival Distribution
+2) Service Distribution
+3) Number of servers
+4) Total Capacity (infinite if not specified)
+5) Population Size (infinite)
+6) Service Discipline (FCFS/FIFO)
+**** ...
+**** Kendal Notation Exampples
+*** Little's Law
+- Mean number tasks in system = (Mean arrival rate) * (Mean response time)
+
+
+* Lecture 11
+#+date: <Thu 10-08-2020>
+** Last Class Review
+- Queueing Theory
+  + In general, can represent any flow of jobs/requests to some service/resource that is exclusive.
+- Kendall's Notation
+  + ArrivalDistribution/ServiceDistribution/numServers/maxCapacity/Population/Discipline
+  + M/M/1/inf/inf/FIFO
+    - M stands for "Markovian", exponential distribution
+- Little's Law
+** Important Bits
+- Presuming an M/M/1 queue
+- Lambda and mu are observable from outside the system!
+  + And they can be used to tell you about the internal state of the system!!
+- Lambda = Arrival Rate
+- Mu = Service Rate
+- Rho = Serive Utilization = Lambda / Mu
+- L = (1-Rho) * (Rho^n)
+- Probability of number of things in the system, n: Rho^n
+- Size of queue needed to handle (i.e. avg number of things in the system) with probability M:
+
+
+* Lecture 12 (TO DO: Watch 11Lec Video)
+
+
+* Lecture 13
+** TODO: Watch First Part of 12Lec (More Queue Management Stuff)
+** Routing Protocols (Part 1)
+*** Overview
+- The _data link layer_ establishes and terminates a connection between two physically-connected nodes on a network.
+- The _network layer_ uses network addresses (typically Internet Protocol addresses) to route packets to a destination node.
+- But, how does the network layer determines these routes?
+- We want to asbtract the network as a graph where:
+  + Routers/hubs and end systems are nodes.
+  + Links and channels are edges.
+- Then, use Graph Theory to:
+  + Describe the network
+  + Run algorithms
+  + Prove properties
+*** Routing Algorithms
+- A _routing algorithm_ decides which output link an incoming packet should be transmitted to.
+- A logical _routing table_ contains the mappings from the networks and host addresses to output ports on the router.
+- The routing algoritm *builds the routing table*:
+  + Typically a more advanced data structure is used, but conceptually it's a map looked up with the destination address as the key.
+*** Shortest-Path Routing
+- For a pair of communicating hosts, there is a _shortest path_ between them.
+- Shortness may be defined by:
+  + Number of router/switch hops
+  + Geographic distance
+  + Link delay
+- Essentially, what you care about will determine what that "shortest" or "best" path is.
+- But, once you've determine your defintion of "shortest", the way you actually find the path (or "do the optimization") is the SAME.
+*** Routing Algorithms
+**** Link State
+***** Link State Routing
+[[youtube:P6hn1kSECng][Flooding Youtube Video]]
+- Each router measures the distance (in delay, hop count, etc.) between itself and its adjacent routers.
+- The router builds a packet containing all these distances.
+  + The packet also contains a sequence number and an age field.
+- Each router distributes these packets using _flooding_.
+- Each router *builds a map of the entire network*, then uses a shortest-path algorithm.
+- To control flooding, the _sequence numbers_ are used by routers to discard flood packets they have already seen from a given router.
+- The _age field_ in the packet is an expiration date. It specifies how long the information in the packet is good for.
+- Once the router receives all the link state packets from the network, it can reconstruct the complete topology of the network and compute a shortest path between itself and ANY other node using _Dijkstra's Algorithm_.
+***** Dijkstra's Algorithm
+[[youtube:Eur-ZPNArjk][Dijkstra's Worked Example Video]]
+- One of the most popular general-purpose algorithm for finding the shortest path between nodes in a graph is _Dijkstra's Algorithm_.
+- A router will use some of the information gathered during the algorithm to construct its routing table. The data it would need for this would mainly be the _length of the shortest path from it to all the other routers_ on the network, and _what router to send the data to next_ in order to go along the shortest possible path.
+- NOTE: In order to properly run Dijkstra's Algorithm, each router needs to know how the network is structured and the costs of all the possible hops in the network. Generally, this information is NOT available to each router.
+  + Look to the _Bellman-Ford Algorithm_ for a shortest path algorithm that doesn't require as much overhead as Dijkstra's.
+**** Distance Vector
+***** Distance Vector Routing
+[[youtube:-AyHRhaw4Ao][Distance Vector Youtube Video]]
+- Each router maintains lists of best-known distances to all other known routers. These lists are called _vectors_.
+- Each router is assumed to know the exact distance (in delay, hop count, etc.) to other routers directly connected to it.
+- Periodically, vectors are exchanged between adjacent routers, and each router updates its vectors.
+***** Bellman-Ford Algorithm
+[[youtube:URz8xd_PVhE][Bellman-Ford Worked Example Video]]
+****** Basic Idea
+- This algorithm only requires local information from neighboring nodes to compute the shortest path.
+- Works even on graphs with negative weights.
+****** Problem: Count-to-Infinity
+- With distance vector routing, links coming on line converge quickly but link failures converge slowly. In other words, it takes a while to discover that a link has been disconnected.
+  + When a node drops out of the network, the nodes connected to it think that the connection is merely getting slower.
+- This problem with distance vector routing algorithms is called _count-to-infinity_.
+****** Split Horizon
+- Insight: It's not useful to claim reachability for a destination to the neighbor from which the route was learned.
+- Don't report routes back to the node from which the route was learned.
+  + E.g. If I hear from X that it has a route to Y, I won't report on routes to Y back to X.
+****** Split Horizon with Poisoned Reverse
+- Report split horizon routes as "infinity" to break loops on the first routing exchange.
+****** Split Horizon Failure
+-
+
+
+* Lecture 20 (TODO: Watch first part of 19Lec Video)
+** Last Class Review
+** DHT
+** Data Link Layer (Part 1)
+*** Link Layer Introduction
+- Hosts and routers are _nodes_.
+- Communication channels that connect adjacent nodes along communication path are _links_.
+- Layer-2 packet is a _frame_, this encapsulates the datagram.
+- The _data link layer_ has the responsibility of transferring datagrams from one node to an adjacent node over a link.
+  + Essentially, transmit data to a node/machine you are DIRECTLY connected to.
+*** Link Layer Services
+1) Framing
+   - Encapsulate datagram into frame, adding a header and tailer.
+2) Link Access
+   - Channel access when dealing with a shared medium/
+3) Reliable delivery between adjacent nodes
+4) Flow Control
+5) Error Detection
+6) Error Correction
+7) Half-Duplex and Full-Duplex
+   - _Half-Duplex_ essentially means that only one side can send at a time. Like a walkie-talkie connection.
+   - _Full-Duplex_ means both sides can send at the same time. Like a phone connection.
+*** Access Control Strategies (with examples)
+**** Static Assignment
+- Turns (time) based partitioning (TDMA)
+- Frequency partitioning (FDMA)
+**** Reservation Based
+- Centralized Arbitration (PCI Bus)
+- Binary Countdown (CAN bus)
+- Token Passing (Token-Ring)
+**** Random Access
+- Rely on Chance (Aloha)
+- Carrier Sense, then access (Ethernet)
+*** Adaptors Communication
+- We're talking about the network cards (the _adaptors_) communicating with one another.
+- We don't know exactly what these adaptors are. They might be routers, switches, etc.
+*** Error Detection
+- Include some information for the reciever side to know the bits are correct.
+- But what should we send?
+  + A duplicate?
+    - Need to send N extra bits, can detect up to N errors.
+    - But, we can't do error correction.
+    - So, you lose half your data rate and can't correct any errors. This solution sucks!
+- _EDC_ = Error Detection and Correction bits (redundancy)
+- Error detection is not 100% reliable!
+*** Error Detection and Correction
+**** Major Algorithmic Strategies
+1) Checksums
+2) Parity
+3) Hamming Codes (Interleaved Parity Codes)
+4) Cyclic Redundancy Codes (CRC)
+
+
+* Lecture 21
+** Last Class Review
+** Error Detection and Correction
+*** Checksum
+[[youtube:EmUuFRMJbss][Checksum Worked Example Video]]
+- This solution still causes a loss in bandwidth, but much less so than sending a duplicate.
+- Compute bits to send as one block, the next block, and the complement of their sum.
+- Receiver sums the bits themselves and performs a logical AND on the sum it computed and the checksum bits.
+  + If the result is NOT 0, then there was an error.
+- NOTE: This solution still does not tell us which bit the error occured in, it doesn't even tell us which block is corrupted.
+*** Parity Checking
+[[youtube:jLuj62Gq-1I][Parity Checking Explanation Video]]
+- Another way to establish if binary data has changed during transmission.
+- The communicating computers decide upon the protocol that is used, this is either EVEN or ODD parity.
+- Within each byte of data to be sent, ONE BIT becomes the _parity bit_.
+- The parity bit is either 0 or 1, depending on whether we are looking to create an even or odd number of 1s and 0s in the byte.
+- The receiving computer checks to see if the byte of data received matches the agreed protocol, e.g. an EVEN number of 1s and 0s.
+- If the parity does not match the protocol, there will have been an error during transmission and the data will need to be resent.
+- *Parity Checking is NOT perfect*
+  + Does not spot if two or more bits changed during transmission.
+- _Parity Blocks_
+  + If we arrange our data in a grid and enforce our parity rule BOTH vertically and horizontally, we can identify which bit has changed during transmission.
+  + The incorrect bit is at where an incorrect column MEETS and incorrect row.
+  + [[~/org/img/parity-blocks.png]]
+- You can also simply add the rows/columns to check if there is an even or odd number on 1s.
+  + If you get a 0 -> Even number of 1s
+  + If 1 -> Odd number of 1s
+
+* Lecture 22
+** Last Class Review
+- 2D Parity Check (Parity Blocks)
+  + Can Detect Error : As long as a corresponding even number of errors in both rows and columns doesn't occur.
+  + Can Correct Error: 1 bit
+  + Overhead         : Varies on block size -> (M % B) + B
+** Hamming Codes
+[[youtube:X8jsijhllIA][3Blue1Brown Hamming Codes Video (Part 1)]]
+[[youtube:b3NxrZOu_CE][3Blue1Brown Hamming Codes Video (Part 2)]]
+** CRC Polynomial Codes
+[[youtube:6gbkoFciryA][CRC Worked Example Video]]
+
+
+* Recitation Notes
+** Mon. Sep 21 Recitation
+- Content-Encoding: identity
+  + ALWAYS the case
+- Content-Length and Last-Modified
+  + Methods in File Class of Java (File.java). File.length()
+- Where are Files Located?
+  + doc_root directory
+** Recitation - Wireshark Lab 2
+#+date: <Wed 12-02-2020>
+*** Wireshark Lab
+- Frequent Questions
+  + You need to convert from microseconds to seconds.
+- Tips
+  + Use the previous App.java file as a starting point for this project.
+- Student Questions
+  1) Is the handler (pcaphandle) the destination or the source?
+     - ??
+  2) How do you get the IP addresses?
+     - Look at previous App.java
+  3) How to keep track of incomplete flows and completed ones?
+     - ??
+  4) What is meant by "total time"?
+     - Time when FIN arrives - Time when SYN arrives

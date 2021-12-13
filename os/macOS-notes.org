@@ -1,0 +1,35 @@
+#+TITLE: MacOS Notes
+
+* Homebrew
+** Important Commands
+- =brew update=
+  + Updates brew itself and fetches info on what's available for your other software.
+- =brew upgrade=
+  + Upgrade/update everything you've installed with Homebrew.
+- =brew upgrade <package_name>=
+  + Upgrades only a specific package.
+- =brew upgrade --cask=
+  + Upgrade GUI apps you've installed.
+- =brew list=
+  + Lists all the packages you've installed.
+- =brew list --cask=
+  + Lists all the GUI apps you've installed.
+- =brew remove <package_name>=
+  + Removes a specific package.
+- =brew outdated=
+  + Display available updates.
+- =brew cleanup=
+  + Remove old versions of packages, old symlinks, etc.
+- =brew leaves=
+  + Lists only the packages you've installed without listing their dependencies.
+** Opting Out of Google Analytics
+- =brew analytics off=
+** Brew Taps
+- The _tap_ command allows Homebrew to *tap into* another repository of formulae. Once you've done this, you've expanded your options of installable software.
+- These additional Git repos (located at /usr/local/Homewbrew/Library/Taps) describe sets of package formulae that are available for installation.
+- =brew tap=
+  + Lists tapped repositiories
+- =brew tap <tap_name>=
+  + Add a tap.
+- =brew untap <tap_name>=
+  + Remove a tap.

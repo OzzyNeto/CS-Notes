@@ -1,0 +1,114 @@
+#+AUTHOR: Ozzy Neto
+#+TITLE: Tmux Notes
+
+* Everything You Need to Know About tmux
+#+AUTHOR: Erik Dubois
+[[https:arcolinux.com/everthing-you-need-to-know-about-tmux-introduction/][Article Link]]
+** Introduction
+*** What is tmux?
+- The key elements of tmux are Sessions, Windows, and Panes.
+- _Session_: The entity that holds one or more Windows. Once tmux is started, it will have at least one session. Sessions are like Workspaces in Tiling Windows Managers, or VMs in Virtualbox.
+- _Window_: The entity that holds “panes” and resides within a session. All sessions start with at least one Window open. Windows have layouts and can be split into “Panes”.
+- _Pane_: Is a pseudoterminal encapsulating the shell. A tmux Window can be split into panes, each is a terminal that can run applications or processes. Think of a Pane as a “terminal within a terminal.” When tmux is running, you will always have at least one pane open.
+*** Basic Usage
+- We interact with tmux by sending commands to the running tmux server.
+- The “prefix key” is the most important key in tmux. It is how we are able to interact with tmux sever, split windows, move windows, switch sessions, and many other custom commands.
+- *The default prefix key in tmux is =<Ctrl-b>=.*
+- Three Ways of Sending Commands to tmux:
+  1) Keybindings (or keyboard shortcuts) – all keybindings must start with the prefix key (Ctrl + b by default).
+  2) tmux commands sent from the shell – tmux must be started and all tmux commands follow this format: =$ tmux <command>=
+  3) User -defined config file – if it exists, tmux reads the user config file when the server first starts. The default location for the tmux user config file is: ~/.tmux.config. The config file is a good place for settings or options that need to be persistent.
+** Servers and Sessions
+*** How Does tmux Work?
+- tmux has a *client-server* implementation. When you run tmux, you essentially connect to the tmux server via a socket. The server manages everything without the need for client expertise.
+- Servers hold one or more sessions.
+- Servers ensure that sessions remain alive, even after detaching the client.
+- Servers are terminated when the last remaining running session is closed.
+- When we start a new instance of tmux, while a server is running, a new session is created inside the running server.
+- (For Advanced users) You can run multiple tmux servers. See -L flag in the documentation.
+- By default, the tmux server is named “default” and the socket is stored in /tmp. You can override it using the =TMUX_TMPDIR= environmental variable.
+- Servers have clients. When we launch tmux and are attached to a session, we have a client connection to the tmux server.
+- Query a tmux server for a list of active clients:
+  + $ =tmux list-clients=
+*** tmux Sessions
+- A _session_ is nothing but a collection of pseudo terminals that are managed by the tmux server.
+  + A session holds one or more _windows_.
+- When a tmux server starts it creates a new session that has 1 window.
+- Sessions are *persistent* and can survive things like SSH timeouts, sessions detachings, and closing the terminal.
+- By default, a session will not survive a system reboot.
+  + But, there are tmux plugins and configuration settings that make this possible too!
+- By default, tmux names sessions numerically starting with number zero “0”. But sessions can be renamed from within tmux or from the command line.
+- To rename the current session from within tmux:
+  + =prefix + $=
+- From the command line:
+  + $ =tmux rename-session -t old_session_name new_session_name=
+- When creating a new session, you can give it a name with:
+  + $ =tmux new-session -s 'my Arco Project'=
+- To list all active sessions:
+  + =Prefix + s=
+  + $ =tmux list-sessions=
+*** Command Mode
+- tmux commands can be executed from the tmux “command mode.” To enter the tmux command-mode, use =Prefix + :=
+- When in command-mode, you should not proceed the command with the word “tmux”.
+- Common tmux session related shortcuts
+
+  | Shortcut   | Action                                                     |
+  |------------+------------------------------------------------------------|
+  | Prefix + ( | Switch the attached client to the previous session.        |
+  | Prefix + ) | Switch the attached client to the next session.            |
+  | Prefix + L | Switch the attached client back to the last session.       |
+  | Prefix + s | Select a new session for the attached client interactively |
+  | Prefix + d | Detach from session                                        |
+  | Prefix + $ | Rename session                                             |
+
+** tmux Windows
+*** Window Basics
+- A tmux _window_ is the entity that holds panes and resides within the tmux session.
+- A window may be split horizontally, or vertically, into one or more rectangular areas called “panes.”
+- The status bar (or status line) at the bottom of the screen displays the name of the current window, as a visual indicator. Please note that the symbol “*” indicates the active window.
+- tmux indexes windows numerically, starting with 0 (by default). The default name given to a window is its index number (default is 0), unless defined otherwise.
+- Many users prefer to change the default index numbering in tmux to start with 1. To make this the default behavior when running tmux, put this command in your config file (~/.tmux.conf):
+  + =set -g base-index 1=
+*** Common tmux Window Related Shortcuts
+
+| Shortcut       | Action                                       |
+|----------------+----------------------------------------------|
+| Prefix + c     | Create window                                |
+| Prefix + ,     | Rename current window                        |
+| Prefix + &     | Close current window                         |
+| Prefix + p     | Navigate to previous window                  |
+| Prefix + n     | Navigate to next window                      |
+| Prefix + l     | Bring up the last selected window            |
+| Prefix + f     | Go to a window with a match of a text string |
+| Prefix + 0 … 9 | Switch/select window by number               |
+
+*** Moving (Reordering) Windows
+- As the number of your windows increases, you may want to reorder or move them around. This can be easily accomplished using the *move-window* tmux command.
+- move-window requires two arguments:
+  1) *-s* (source or the window you want to move)
+  2) *-t* (target index number)
+- Note that the target index number must NOT be used by another window.
+- For example, to move the current window to index 7:
+  + $ =tmux move-window -t 7=
+- To move window 3 to index 5:
+  + $ =tmux movew -s 3 -t 5=
+- To accomplish the same behavior using tmux shortcut, you can use =Prefix + .= , which will prompt for an index to move the current window to.
+
+*** Window Layouts
+- You can split a tmux window vertically or horizontally into panes. The arrangements of the panes within a window is referred to as _layout_.
+- tmux comes with a number of preset layouts that may be selected with the =select-layout= command or cycled with =next-layout= command.
+- In addition, you can cycle through the layouts using the shortcut: =Prefix + SPACE=
+- Supported tmux Layouts
+  1) =even-horizontal= - Panes are spread out evenly from left to right across the window.
+  2) =even-vertical= - Panes are spread evenly from top to bottom.
+  3) =main-horizontal= – A large (main) pane is shown at the top of the window and the remaining panes are spread from left to right in the leftover space at the bottom. Use the main-pane-height window option to specify the height of the top pane.
+  4) =main-vertical= – Similar to main-horizontal but the large pane is placed on the left and the others spread from top to bottom along the right. See the main-pane-width window option.
+  5) =tiled= – Panes are spread out as evenly as possible over the window in both rows and columns.
+
+*** Closing Windows
+- When you exist (or kill) the last pane in the active window, the window will be closed (or killed).
+- However, to close the active window along with its pane(s), use the shortcut: =Prefix + &=
+- To kill the current window using the tmux command, use the following inside the current window:
+  + $ =tmux kill-window=
+- It is possible to kill a target window from outside the current window (using a script, for example) by using the -t option, which specifies the index of the window to be closed.
+  + $ =tmux kill-window -t <index>=

@@ -1,0 +1,544 @@
+#+TITLE: Linux Notes
+
+* Arch Linux Installation
+** Wifi
+*** Networking Types
+- Wired or Wireless
+  - Wired is usually straightforward to set up.
+  - Wireless: different security solutions.
+- Fix or Dynamic IP
+  - Dynamic IP gets an automatic address from a DHCP server (needs DHCP client running).
+  - Fix IP: the user needs to set it up.
+*** Wired Network
+- Use "ip link" command to list all network interfaces.
+  - In case of a wired connection, possibly DHCP client is running already and therefore has an IP (check if this is the case in systemd by running "systemctl list-units | grep dhcp").
+  - You can start it by running "systemctl start dhcpcd@interface". The "interface" in the command can be found using the "ip link" command.
+- Check the adapter properties using the "ip address" command.
+  - You can check the connection with the "ping" command.
+  - To find acutual IP addresses look for the "inet" row in the command output.
+*** Wireless Network
+- NOTE: In July 2020, the Arch Installer removed netctl and wifi-menu.
+- To install Arch Linux using a wifi connection, you should now use the *iwctl* command. Simply type out =iwctl= in the terminal to start the "iwd" prompt.
+- Step 1: Find the name of your wireless adapter
+  + Command: _device list_
+- Step 2: Scan the available wireless networks
+  + Command: _station <wireless_adapter_name> scan_
+  + NOTE: wireless_adapter_name is the name found in Step 1
+  + This command starts scanning but doesn't output the names of the available networks, for that, go to Step 3.
+- Step 3: Find the name of your network
+  + Command: _station <wireless_adapter_name> get-networks_
+- Step 4: Connect to the Network
+  + Command: _station <wireless_adapter_name> connect <network_name>_
+- Step 5: Enter password and "exit" the iwd prompt
+*** Regarding Issues with iwd
+- If your wireless device is not powered on, run the command =rfkill unblock wlan=.
+- To make sure the device is unblocked, you can run =rfkill list all=
+*** Install the iwd Package While arch-chroot's in the System
+- Make sure to run =pacman -S iwd= while you're arch-chroot'd into the new system.
+- Also make sure to enable the iwd service with =systemctl enable iwd.service=
+- If you don't do this, you won't be able to connect to your wifi network after rebooting the system.
+*** Configure iwd
+- Setup DNS capabilities using the built-in _systemd-resolved_ package with =systemctl enable systemd-resolved.service=
+- Add the following lines to the _/etc/iwd/main.conf_ file:
+#+begin_src text
+[General]
+EnableNetworkConfiguration=true
+
+[Network]
+NameResolvingService=systemd
+#+end_src
+
+* Arch Linux Maintenance
+** Failed systemd Services
+- Command to check for failed services:
+  + *systemctl --failed*
+- Command to Check Lock Files:
+  + *sudo journalctl -p 3 -xb*
+** Update the System Regularly
+- Command to use yay to update packages from BOTH main repos and AUR
+  + *yay -Syu*
+** Check the pacman Cache
+- The _pacman cache_ is the cache where packages are STORED whether or not they were installed.
+- Command to delete cached packages that are NOT currently installed in the system:
+  + *sudo pacman -Sc*
+  + For the AUR: *yay -Sc*
+- Command to delete ALL packages that are in the cache regardless of whether they're installed or not
+  + *sudo pacman -Scc*
+  + *yay -Scc*
+** Removing Unwanted Dependencies
+- *yay -Yc*
+** Removing Orphan (Unused) Packages
+- Command to check if there are orphan packages in the system:
+  + *pacman -Qtdq*
+- Command to delete all orphan packages in the system
+  + *sudo pacman -Rns $(pacman -Qtdq)*
+** Cleaning Up Directories That Might be Taking Up Space
+*** ~/.cache/
+- We can use the _du (disk usage)_ command to check how much space a directory is taking up.
+- Command to check how much space our home .cache diretcory is taking up:
+  + *du -sh ~/.cache/*
+  + -s: Summarize
+  + -h: Human-Readable
+- Delete the CONTENTS of the .cache directory:
+  + *rm -rf ~/.cache/**
+*** ~/.config
+- If this directory is getting bloated, delete any configuration folders that you don't need.
+*** /var/log/journal
+- Contains logs that can be useful if you need to troubleshoot your machine.
+- But if you don't clean it up regularly, it can take up a lot of space.
+- Command to clean up the journal directory in such a way that only the logs from the past 2 weeks remain:
+  + *sudo journalctl --vacuum-time=2weeks*
+** Refreshing the mirrorlist
+- reflector command to refresh your mirrorlist:
+  + *sudo reflector -c 'United States' -a 6 --sort rate --save /etc/pacman.d/mirrorlist*
+
+* What is UEFI and How to Use It
+- How to know if you're booted in UEFI
+  - RUN COMMAND: ls /sys/firmware/efi/efivars
+  - If ls returns stuff, you're in UEFI
+
+* grep
+** Usage
+- Searching for a specific string in a file
+  - grep "search_string" [filename]
+- Searching for a specific string in a directory
+  - Use the * wildcard
+  - grep "search_string" ./*
+- Searching for a specific string in all .txt files in a directory
+  - grep "search_string" ./*.txt
+- Searching for a string in a directory and all sub-directories
+  - We need to perform a _recursive search_. Be careful when using this; it might that a LONG time.
+  - We do this using the -r option, and we don't need to use the * wildcard when specifying the starting directory.
+  - grep -r "search_string" [start/dir/]
+** Options
+- w
+  - Returns only the strings that EXACTLY MATCH the search string.
+- i
+  - Makes grep NOT case sensitive. The command is case sensitive by default.
+- n
+  - Outputs the line number of the string matches.
+- B [num_lines]
+  - Outputs num_lines lines BEFORE the match (also outputs the match line itself).
+- A [num_lines]
+  - Same as -B, only the lines are AFTER the match.
+- C [num_lines]
+  - Prints num_lines BEFORE AND AFTER the match.
+  - Think of this as printing the CONTEXT around the match.
+- r
+  - Recurisive Search. Allows us to search through a starting directory and all its sub-directories.
+- l
+  - Lists what files contain a match when trying to match in a directory.
+- c
+  - Does the same thing as the -l option, but also prints how many matches were found in each file.
+- P
+  - Allows for the usage of Perl compatible regular expressions in search strings. This only works on Linux machines.
+  - NOTE: MacOS uses the BSD version of grep, while Linux uses the GNU version.
+** Practical Use Cases
+- Search our history for latest git commits
+  - history | grep "git commit"
+- Regular Expressions Searches
+  - grep uses POSIX RE by default, which is unlike the regular expressions used in Python and other languages.
+  - Use the -P option for Perl compatible regular expressions to work.
+  - Ex) Searching Files for Phone Numbers
+    - grep "...-...-...." names.txt
+** Regular Expressions
+- A great file to use to work on regex skills is the dictionary found on any Linux system at /usr/share/dict/
+- Another file: /etc/passwd
+*** Basic Regex
+- *
+  - Matches zero or more times the preceding character.
+- .
+  - Matches 1 of any character.
+*** Character Classes
+- Allows us to match a "class" of characters.
+- Use brackets [] to specificy them.
+- It matches on just one element within the class, but it can choose between any of them.
+- Ex) Lowercase Letters: [a-z]  OR  [ [:lower:]]
+- Ex) Digits: [0-9]  OR  [ [:digit:]]
+- Ex) Alphabetic Characters: [a-zA-Z]  OR  [ [:alpha:]]
+- Ex) [ [:space:]] matches any whitespace
+**** Abbreviations
+- These are not standard in GNU grep, but are Perl regex abbreviatios (use -P option for them to work in GNU grep).
+- \d = [0-9]
+- \w = [a-zA-Z0-9_]
+- \s = [ \t\n\r\f] ---> Space
+- Negation of these character classes (Just use capital letter instead): \D, \W, \S
+
+* Tarballs - Archive and Compress Folders
+** Creating a Tarball
++ tar -czvf <tarball-name>.tar.gz <folder-to-compress>
+  - c: Create
+  - z: Compress with gzip
+  - v: Verbose. Tell us what's going on with the process.
+  - f: Allows us to specify file name
+** List Items in a Tarball
+- tar --list -f <tarball-name>.tar.gz
+** Extract a Tarball
+- tar -xzvf <tarball-name>.tar.gz
+  + x: Extract
+  + z: Uncompress with gzip
+
+* cURL
+** Important Options
+- -i
+  + Outputs all the header information.
+- --head
+  + ONLY outputs the header.
+  + -I does the same thing.
+- curl -o <output-file> <resource>
+  + Puts the command output into output-file.
+- curl -O <resource>
+  + Downloads the resource.
+- curl -O --limit-rate 1000B <resource>
+  + Downloads the resource with a limit on the data transfer rate. (1000B is just an example)
+- -L
+  + Follows redirection.
+- -X
+  + Allows you to set the HTTP request function.
+** HTTP Requests
+*** PUT Requests
+- curl -X PUT -d "title=Hello" <http-url>
+*** DELETE Requests
+- curl -X DELETE <http-url>
+** Linux Essentials: cURL Fundamentals
+[[youtube:Xy7fDxz39FM][Video Link]]
+*** Basics
+- _curl_ is a utility that allows you to transfer data to or from a network server using one of its supported protocols.
+- The protocols supported by curl are: HTTP, HTTPS, FTP, FTPS, SFTP, TFTP, telnet, etc.
+- It is a multi-platform tool. Works on Linux, Windows, and MacOS.
+*** Basic Queries
+- =curl <url>=
+  + Returns the contents of the web page at the specified url.
+- =curl -o <file> <url>=
+  + Saves the contents of the web page into the specified file.
+  + Example: curl -o ~/Desktop/hsploit.html https://hsploit.com
+  + To check the accuracy of the command, you can simply open the file using a web browser.
+*** Downloading Files From the Web
+- =curl -o <file> <download_link>=
+  + Downloads the contents at the download_link and saves it into the specified file.
+  + Ex: curl -o ~/Downloads/ubuntuIso.iso https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso
+  + Note that the extension of the specified file is VERY important. If you don't give it the right extension, it will save it in the wrong format.
+- =curl -O <download_link>=
+  + Downloads the contents at the download_link into the current directory with the default file name.
+*** HTTP/HTTPS Redirection with curl
+- If an HTTP or HTTPS url is being redirected to a different web page, you need to specify this to curl by using the -L command. If you don't tell curl about the redirection, it will not output anything.
+- =curl -L <url>=
+- Example: HTTP web page that redirects to HTTPS web page
+  + curl -L http://hsploit.com
+*** Querying HTTP Response Headers
+- =curl -I <url>=
+  + This outputs ONLY the repsonse headers.
+*** TLS Handshake with curl
+- =curl -v <url>=
+  + Shows the verbose output of the TLS handshake and other connection details (certificates, etc.)
+*** HTTP POST Requests with curl
+- =curl --data "<post_data>" <url>=
+  + Sends a POST request to the specified url. Notice that the data is wrapped in quotation marks.
+
+* ip
+** Finding your IP Address
+- ip a
+- nmcli -p device show
+
+* youtube-dl
+** Basic Downloading
+- *youtube-dl <URL>*
+  + This places the downloaded video in your current working directory.
+- Listing Available Formats
+  + *youtube-dl -F <URL>*
+    - This hunts down the video and lists all of the available formats (and their format codes) that you could specify for downloading it.
+- Downloading With a Specific Format
+  + *youtube-dl -f <FORMAT_CODE> <URL>*
+- Downloading Playlists
+  + *youtube-dl <PLAYLIST_URL>*
+- Downloading an ENTIRE CHANNEL
+  + *youtube-dl <CHANNEL_URL>*
+
+* Virtual Machines
+** Virt-Manager
+*** Packages Needed
+1) qemu
+2) libvirt
+3) ebtables
+4) virt-manager
+*** Enable and Start the libvirtd Daemon
+- sudo systemctl enable libvirtd
+- sudo systemctl start libvirtd
+*** Add Yourself to the libvirt Group
+- sudo usermod -G libvirt -a <your_username>
+
+* vim
+* tmux
+**
+* make
+** Tutorial: GNU make and Makefile
+[[youtube:Lyp36ku7D0A][Video Link]]
+*** Naming and Basics
+- The convention is to always use the name 'Makefile'.
+- When make is called it searches the current directory for files named 'Makefile' and then for files named 'makefile'.
+- You can think about Makefiles as a way to write recipes for creating files.
+- A cool thing about make is that it compiles the bare minimum number or files needed in order to change the actual file you're trying to create.
+  + In other words, make doesn't do any work that it doesn't have to, which is great if you are trying to compile a program with many dependencies.
+*** Formatting
+- The main part of the Makefile consists of a series of _targets_.
+  + The targets are always named after what file we're trying to create, followed by a colon, followed by whatever dependencies the target has.
+  + A target can also have no dependencies.
+  + <target_name>: <dependency1> <dependency2> ... <dependencyN>
+- After the target declaration and listing its dependencies, you go down a line, press TAB, and then specify all the _commands_ that need to be run in order to create the target using its dependencies.
+  + Note that you CANNOT USE SPACES, you need to use TAB.
+  + Note that you can only specify ONE command per line.
+- Example: A simple Makefile that creates a file
+#+begin_src makefile
+myfile:
+		touch myfile
+#+end_src
+*** Running a Makefile
+- You DO NOT run a Makefile in the same way that you run a bash script or a C executable (./my-script).
+- Instead you simply call "make" from within the directory that your Makefile is in. Then the make tool finds and runs your Makefile.
+- If you simply run "make", then the Makefile runs only the first target.
+- But, you can also specify a target for the Makefile to run, for example "make clean".
+*** all and clean Targets
+- There are two targets that you should ALWAYS have in your Makefile: all and clean.
+- all
+  + It builds any targets that you should normally build.
+  + Doesn't have any commands listed in its body. All it has is "dependencies" which are actually targets in the Makefile that should be built by default.
+  + all should be the FIRST target listed in the Makefile.
+- clean
+  + Doesn't have any dependencies, but does have a command/s.
+  + It should call whatever commands are necessary to undo everything that the 'all' target did.
+  + It essentially "cleans" the working directory.
+- Example: Previous example with 'all' and 'clean' targets
+#+begin_src makefile
+all: myfile
+
+myfile:
+		touch myfile
+
+clean:
+		rm -f myfile
+#+end_src
+*** Dependencies
+- Sometimes a target you want to build depends on other targets having already been built. In these cases, you must specify the dependency targets in your target's dependency list.
+- Example: Makefile with Dependencies
+#+begin_src makefile
+all: myfile2
+
+myfile:
+		touch myfile
+
+myotherfile:
+		touch myotherfile
+
+myfile2: myfile myotherfile
+		cat myfile myotherfile > myfile2
+
+clean:
+		rm -f myfile
+		rm -f myotherfile
+		rm -f myfile2
+#+end_src
+- Notice in this example that in order for the command in the 'myfile2' target to run properly, the other targets must have been built in the first place. Thus, we list those other targets as dependencies of our 'myfile2' target.
+  + make will first build the dependencies and then build the original target.
+- Also notice that our 'all' target builds 'myfile2', thus if we simply run "make" in the command line, it will automatically build 'myfile2'.
+*** Makefile Variables
+- RM variable for removing files
+  + Instead of having to type out "rm -f" every time you want to delete a file in a Makefile, you can use the built-in variable =$(RM)= which resolves to the same thing.
+  + Example: $(RM) myfile
+    - This resolves to the same thing as "rm -f myfile".
+- Defining/Redefining Variables
+  + To define a varible in a Makefile, you must define it at the top of the file before any target definitions.
+  + Syntax for variable definition
+    - <var_name>=<var_value>
+    - Ex: foo=ls -l
+  + You can also redefine built-in variables.
+    - For example, if we wanted to redefine RM to mean simply "rm" and not the default value of "rm -f", we would write: RM=rm
+- Using variables is key because it makes your Makefile machine independent.
+  + For example, the =$(CC)= variable gets resolved as the default c compiler on whatever machine is running the Makefile.
+  + It's important to use this variable because while your machine may run gcc by default, someone's else's may only have clang installed.
+  + If you want to force a specific C compiler to be used, you could simply redefine this variable, 'CC=gcc' for example.
+- By convetion, variable names should be all caps.
+- There is a variable which refers to the target of the current rule you're in: =$@=
+- Variable which refers to the entire list of dependencies of the current rule you're in: =$^=
+** The GNU Make Book
+* Linux Networking
+** Intro to Linux Networking Series (Fall 2012)
+*** General Linux Networking
+[[youtube:pIYXsfAoyb4][Video Link]]
+**** Linux Networking Devices
+- In Linux, your network interface is considered a device.
+- To list the current netowrk devices on your system, use the =ip l= command.
+- lo
+  + This is the _loopback device_. It's a special address and device that always refers to yourself.
+- To list the addresses attached to each network device, use the =ip a= command.
+**** Networking Device Naming
+- Ethernet device names start with "en" while wireless device names start with "wl".
+- Example: Ethernet device name and what it all means
+_enp0s10_:
+| | |
+v | |
+en| |   --> ethernet
+  v |
+  p0|   --> bus number (0)
+    v
+    s10 --> slot number (10)
+*** File Transfer Protocols
+[[youtube:g6tloRJL75w][Video Link]]
+**** scp
+- Does the same thing as the cp command, only it does it over SSH. So, it allows you to copy files to and from a remote server.
+- The basic syntax of the command is =scp <source> <target>=, where the source is the file you want to move and the target is where it is going.
+- =scp <local_path> <remote_user>@<remote_host>:<remote_path>=
+  + Copies a file (located at local_path) on your local machine TO a specific path on the remote machine.
+  + Note that by default the remote_path is set to the remote host's $HOME variable.
+- =scp <remote_user>@<remote_host>:<remote_path> <local_path>=
+  + The inverse of the previous command. This command copies a file FROM a remote machine to your local machine.
+**** sftp
+- File transfer protocol over SSH. Very similar to scp, biggest difference being that sftp is interactive (session-based).
+- =sftp <remote_user>@<remote_host>=
+  + Starts an sftp session to transfer files with the remote_host.
+    - You can type _help_ on the sftp prompt in order to list command command names and what they do.
+  + The SFTP shell allows you to run commands on EITHER the local or remote machine. The normal command names run the command on the remote machine, while local commands are distinguished by having an 'l' in front of the typical command name.
+    - For example, 'pwd' would print the working directory of the remote machine, and 'lpwd' woudl print the working directory of the local machine.
+  + If you run '!<command>' in the sftp shell, it's the same as running that specified command on the your local machine.
+  + =get <file1> <file2> ... <fileN>=
+    - Downloads the files from the remote machine to the working directory on your local machine.
+  + =get -r <dir>=
+    - Downloads an entire directory.
+  + =put <file1> <file2> ... <fileN>=
+    - Uploads the files from your local machine to the working directory on the remote machine.
+  + =put -r <dir>=
+    - Uploads an entire directory.
+  + =exit= OR =quit= OR =bye=
+    - Ends the session.
+**** rsync
+- Similar to scp, but it is a lot more efficient. It only uploads/downloads files that are different/have changed.
+- Important Flags
+  + _-a_
+    - Archive mode, maintains the file structure on both remote and local machines.
+  + _-v_
+    - Verbose.
+  + _-z_
+    - Add compression. Makes copies smaller/faster.
+  + _-P_
+    - Shows interactive progress.
+  + _-i_
+    - Shows more information about what's happening to each file.
+  + _-n, --dry-run_
+    - Performs a trial run with no changes made.
+* Shell Scripting
+** Intro to Linux Shell Scripting Series (Fall 2012)
+*** Shell Basics
+[[youtube:ak6tNsm0Frw][Video Link]]
+**** Pipes and Redirection
+- Remember that we can redirect stdout to a file of our choosing using _>_ and _>>_. Where > overrites the file and >> appoends to it.
+- Redirecting stderr
+  + By default, > and >> redirection stdout, but we can change that to make them redirect stderr.
+  + =<command> 2> <file>=
+    - The _2>_ operator makes it so stderr will get redirected into the file instead of stdout.
+    - Note that the 1> operator would redirect stdout, thus we simply use > for that case.
+  + =<command> &> <file>=
+    - This redirects BOTH stdout and stderr to the file.
+- Pipes (|)
+  + The redirection operators always send you to a file (you can only redirect to a file). But the pipe operator redirects you to another /program/.
+  + This is a very powerful feature of UNIX because it allows you to chain many small programs together (using pipes) into a much more complex operation.
+  + Piping sterr
+    - Pipes only work with stdout, so if you want to pipe the stderr of some program into another program, you first need to switch stdout with stderr.
+    - You can flip stdout and stderr with: =2>&1=
+    - Example: ps -Y 2>&1 | sort
+**** Shells
+- A _shell_ is essentially the interface between you and the OS. It's  a low-level program that does mnay things including generating a shell prompt, running commands, handling piping, etc.
+**** Background Commands
+- =<command> &=
+  + This runs the command in the background.
+- =fg <job_number>=
+  + Brings a specific job (command) back to the foreground.
+- =jobs=
+  + Tells you what jobs are running in the background and displays their corresponding job number.
+- =CTRL-z=
+  + This keybinding STOPS a running foreground process and puts it in the jobs queue.
+  + This is useful if you're in vim with many files open and you want to go back to the command line without having to close all the files.
+- =kill %<job_number>=
+  + Kills a process using its job number (as opposed to using its pid).
+**** Command History
+- =CTRL-r=
+  + Lets you reverse search through your history of commands.
+- =history=
+  + Lists all of the commands you've run (limited by your shell's history limit).
+- =history -c=
+  + Clears the shell's history.
+**** Environment Variables
+- =env=
+  + Prints out important environment variables and their values.
+- These environment variables get initialized when you login to your system.
+*** Shell Scripting
+[[youtube:9m7dXuihMWE][Video Link]]
+**** Shebang
+- The first line of all BASH scripts. Whatever program is specified in the shebang is the progam that runs the commands specified in the script.
+- =#!/bin/bash=
+  + The standard BASH shebang.
+**** File Extension and Executable Privilege
+- BASH script file extension: =.sh=
+- =chmod +x <script>=
+  + After creating a script, run this command to make it executable.
+**** Script with Arguments
+- Argument =$0= is the name of the script, =$1= is the argument given directly after that (the first "true" argument), and so on.
+- The special argument =$*= expands to ALL arguments passed to the script.
+- =$@= is equivalent to $*, but ="$@"= exapnds to all arguments while preserving whitespace.
+**** if Statements
+- Example: Check if we have a bashrc file
+#+begin_src sh
+#!/bin/bash
+
+if [[ -f .bashrc ]]; then
+    echo TRUE
+else
+    echo FALSE
+fi
+#+end_src
+**** for Loops
+- Example: Printing out all files in a directory
+#+begin_src sh
+#!/bin/bash
+
+for f in *; do
+    echo $f
+done
+#+end_src
+**** Functions
+- Example: Defining a Function, Using Arguments, and Calling it
+#+begin_src sh
+#!/bin/bash
+
+foo() {
+    echo "Hello" $1 # The $1 represents the first argument passed to this function
+}
+
+foo bar # Calls the foo() function with argument "bar"
+foo "$@" # Calls the foo() function with ALL given arguments
+#+end_src
+**** Variables
+- Variables are defined like so: =<var_name>=<value>=
+- If the value of the variable has whitespace in it, used double quotes.
+- If you want to pass your variable to a function, you must also use double quotes.
+  + Example: foo "$var"
+- In general, try to ALWAYS use double quotes when defining/passing variables because they get expanded and tokenized.
+**** Command Substitution
+- Allows you to store the output of a command within a variable.
+- Example: Storing ps output in a variable
+#+begin_src sh
+#!/bin/bash
+
+var=$(ps -AH)
+echo $var
+#+end_src
+**** Arrays
+- Example: Creating an Array, Appending to it, and Printing its Contents
+#+begin_src sh
+#!/bin/bash
+
+var=(a b c)
+var+=("d e")
+
+for i in "${var[@]}"; do
+    echo $i
+done
+#+end_src

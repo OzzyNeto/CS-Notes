@@ -1,0 +1,52 @@
+#+TITLE: Compilers
+
+* CS415 Spring 2021
+** Lecture 1
+#+date: <Tue 01-19-2021>
+*** Compiler Basics
+- A _compiler_ takes a program, makes sure it's correct, and outputs an executable version of the program.
+- This course will be about how to get from high-level programming source code to the low level machine code.
+*** What Makes a Compiler Good?
+- The compiler must run fast.
+- Should have good _run-time performance_.
+- Should be able to handle the full power of the programming language.
+- Should hide machine complexity from the programmer.
+  + When compiling your code on a machine, you rarely have to worry about the machine's underlying architecture (number of cores, registers, etc).
+  + Sometimes you don't want to hide everything.
+*** Difficulties of Compiler Design
+- New computer architectures pose new challanges for the compiler by building more complex machines (eg. multi-core CPUs, quantum computers, GPUs, etc).
+** Lecture 2
+#+date: <Thu 01-21-2021>
+*** Register Allocation (Part 1)
+**** Instruction Selection
+- Assume that you have virtual registers, but then you must map those to physical registers (and the mapping must be correct!).
+- Think about which of the registers will live in real registers and which will "live" in memory.
+- The values that must be stored in memory are called =spilled values=.
+**** Memory Model/Code Shape
+- _Dynamic Runtime Environment_
+- _Stack Frames_: Objects get addressed relative to the address of a _base pointer_.
+  + Addr(A) = Base + @A
+  + Here @A refers to the offset of A.
+  + Addr(spill) = Base - @spill
+**** ILOC
+- Appendix A in the textbook introduces ILOC.
+- _Load Immediate_ =loadI= stores the value you provide it into a register/memory.
+- =loadAI <base_addr> <offset> <target_reg>=
+- The constant offsets are controlled by the compiler and determined at compile-time.
+
+* Prof. Ghassan Shobaki's Compilers Course
+** Lecture 2: Register Allocation Concepts
+*** Compiler High Level Overview
+**** Front End
+- Responsible for _scanning_, _parsing_, and _semantic analysis_.
+- INPUT: Source Code
+- OUTPUT: =Intermediate Representation= of the code, which is typically an =abstract syntax tree (AST)=.
+**** Optimizer
+- Optimizations that happen here should be machine INDEPENDENT. But in practice, that is not the case.
+**** Back End
+- Responsible for _instruction selection_, _instruction scheduling_, and _register allocation_.
+  + =Instruction selection= is about making the best use of the instruction set that is available on the target processor. Selecting the most efficient sequence of machine instructions.
+- Low level optimizations that optmize the code on specific hardware (machine dependent).
+*** Example: x = a * b + c / d
+[[~/org/img/compilers0.png]]
+- An algorithm that we could use to

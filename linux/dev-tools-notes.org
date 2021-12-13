@@ -1,0 +1,326 @@
+#+TITLE: Development Tools Notes
+
+* VS Code
+** Keyboard Shortcuts
+*** List All Keyboard Shortcuts
+- Command-K Command-S
+*** Open Recent Projects/Files
+- Control-R
+
+* git
+** How to Use .gitignore Files
+- Simply create a ".gitignore" file in your repo and then within it write the names of the files you don't want git to track.
+** Branching and Merging
+*** What is a branch for?
+- Branches allow us to work on different versions of the same file in parallel.
+- Our edits on one branch can be independent of work on the other branches.
+- We can then decide to incorporate or _merge_ our changes into other branches.
+- Branches result in a separation of versions of the same files. In this way, we can have branches for different purposes (production branch, development branch, bug fixing branch, etc.)
+*** How Are Branches Implemented?
+- Every git commit has a 40 hexadecimal SHA-1 hash.
+- A _branch_ is really just a pointer to a SHA-1 hash.
+- The way git knows which branch we're on is a special pointer called HEAD.
+*** HEAD
+- HEAD usually points to a branch and NOT directly to a commit. Therefore, it's sometimes referred to as a _symbolic pointer_.
+- In git terminologoy, the HEAD pointer tells us what we have "checked out".
+- *git log*
+  + Shows the commit history,
+- *git log --all --decorate --oneline --graph*
+  + Shows us a nice labeled commit graph.
+*** Create New Branches
+- Make new branches with the *git branch *<branch_name>* command.
+- The command *git branch* lists the branches and tells you which branch you have checked out.
+- These branches get instantiated where the HEAD pointer is.
+*** Checkout and Work on Branches
+- To move the HEAD pointer to a new branch use the *git checkout <branch_name>* command.
+- After moving to another branch using the checkout command, you are free to work on that branch and make commits. The master branch will stay the same.
+- NOTE: You can use a one line shortcut to BOTH create and checkout a new branch. *git checkout -d <branch_name>*
+*** Fast-Forward Merge
+- Use the *git merge <branch_name>* command to merge the branch you're on with another branch (branch_name in this case).
+- If there is a direct path between master and another merge. You can perform what's called a _fast-forward merge_.
+- This means that git will just move the master branch to where the other branch is.
+*** Deleting Branches
+- After merging two branches, you may want to consider deleting one of them, since they are now at the same spot.
+- *git branch --merged* will tell you which branches are currently merged.
+- To delete a branch: *git branch -d <branch_name>*
+  + git will block you from doing this if the branch you are trying to delete is not fully merged.
+  + You can override this with the command: *git branch -D <branch_name>*
+*** 3-Way Merge
+- This is what is needed when there isn't a direct path between master and the branch you want to merge it with.
+- The git merge command is the same, only this time git prompts you for a commit message.
+- The merge is then done automatically by git using the _recursive strategy_.
+*** Merge Conflicts
+- A _merge conflict_ occurs when we try to merge branches that have changed the same lines in the same files.
+- *git diff* shows you the modifications in files.
+- *git commit -a -m "commit_message"* lets you add all modifications to the staging area and commit them all in one command.
+- To abort a merge because of conflicts, run: *git merge --abort*
+- When you have a file with a merge conflict, git will modify the file to let you know where the conflicts occur.
+  + The set of ======= separates out the state of the files in the two branches.
+- To setlle a merge conflict, edit the file by choosing the state you want it to merge into. Delete the markers that git generated in the file.
+- Then add the reoslved file to the staging area.
+- Then commit the changes with a commit message. This will merge the branches.
+*** Detached HEAD
+- Usually HEAD points to a branch, which in turn points to a commit.
+- When HEAD is instead pointing directly to a commit, we have the _detached HEAD_ state.
+- This can happen when you checkout a commit instead of a branch.
+  + git checkout <commit_hash>
+- One way out of this state is to simply checkout a branch again (git checkout master, for example).
+- You can create a new branch that points to the commit using the basic git branch creation command. But this will not automatically attach the HEAD to this branch.
+  + For that you would have to git checkout the branch you created.
+*** git stash
+- If you have uncommitted changes on one branch and try to checkout another, git will stop you.
+- You must either commit the changes before checking out the other branch or you must use git stash.
+- Running _git stash_ allows git to save any uncommitted changes you have made in a branch and lets you apply them later.
+- After running git stash, you are free to checkout another branch or perform a merge.
+- _git stash list_ lists all the stashes you have made.
+- _git stash list -p_ you can observe the edits that were made in each stash.
+- Apply the most RECENT stash with _git stash apply_.
+  + This applies the stash, but keeps all stash points in the stash list.
+- To apply the most recent stash point AND remove it from the stash list, run _git stash pop_.
+- If you want to utilize a different stash point instead of the most recent one, we can run _git stash apply <stash_label>_.
+  + NOTE: You find the stash_label by running "git stash list".
+- In the output of the stash list command, we may want a better description of what each stash contains.
+  + For this, you can provide a message with _git stash save "message"_.
+** Git Remotes
+*** Defining Git Remotes
+- A _git remote_ can be any location with a Git repository under a number of different platforms.
+- While people mostly work with Github, other examples of git remotes are a plain Git server with a bare repository, GitLab, Gerrit, BitBucket, etc.
+- A remote can also be a copy or fork of a repo within Github.
+- A remote can be a repo on a coworker's system.
+- It can even be another directory on our same local system.
+*** Create a Repository on Github
+- When you create a repo, Github will intialize it with a single commit and a seed file named /README.md/.
+- The repo starts with a single, default branch named /master/.
+*** Clone a Github Repository
+- The clone command is used to retrieve projects from a remote.
+- *git clone <repo_location>*
+*** git remote Command
+- The *git remote* command displays our remotes when executed inside a git directory.
+- *git remote -v* shows us the full locations of our remotes.
+*** Git Fetch and Merge (Download)
+- If someone commits changes to the remote, your local machine will not know about it until you "fetch" (download) those changes. Even if you know you're local machine is behind the remote, running "git status" will not tell you this is the case.
+- *git fetch <remote_name>*
+  + You'll usually run *git fetch origin*
+  + This fetches the commits from the remote down to your local machine.
+- *git merge <remote_branch>*
+  + This catches up our local machine to where the remote is at.
+  + You'll usually run *git merge origin/master*
+  + This merges the commit referenced by origin/master into our local master branch.
+- *git pull*
+  + Combines "git fetch" and "git merge" into a single command.
+  + It's usually better to keep these two separate however, to avoid unexpected merge results.
+*** Git Push (Upload)
+- Used to push our commits to the remote.
+- *git push origin master*
+  + Push the local commits onto the "origin" remote's "master" branch.
+*** Remote-Tracking Branches
+- When listing the branches in a git repo, you may notice that you have a set of local branches (such as 'master') and a set of remote branches (such as 'origin/master', with 'origin' being the name of the remote in this case).
+- The branch 'origin/master' is a specialized branch, it is called a _remote-tracking branch_.
+  + The job of this remote-tracking branch is to tell us what the master branch looks like at origin (the remote).
+  + By comparing the commit location of thr origin/master branch and your local master branch, you can tell whether your local machine is in "sync" with the remote.
+- You can git checkout the origin/master branch to see where things stand on the remote, but it leads to a detached head state and normally you should just stay on your standard local branches.
+*** Github Forks
+- A _fork_ creates a copy of a repo in Github. You can then clone this copy onto your local machine.
+  + This is useful if you don't have access to modify a remote repo.
+- Simply click the "Fork" button on the Github page of the repo you would like to make a copy of.
+- Upstream
+  + After forking a repo, there's a good chance you'll still want to stay in syc with the original repo.
+  + To do this, you'll need a second git remote. The "origin" remote will point to your personal fork of the repo, and the "upstream" remote will point to the original repo.
+*** Add and Remove Remote Repositories
+**** Adding a Remote
+- *git remote add <remote_name> <remote_location>*
+**** Removing a Remote
+- *git remote remove <remote_name>*
+*** Staying in Sync with Upstream
+- First, you need to fetch any changes from the upstream with *git fetch <upstream_remote>*
+- Then, merge the changes from the upstream to the local machine with *git merge upstream/master*
+  + This command merges the commit from upstream in the master branch into our local master branch.
+- Finally, sync up the changes to your fork remote reposiotry with *git push origin master*
+  + In this case the forked remote is named "origin".
+*** Remote Branches
+- After forking a project, you can create a new branch to change some feature in the project. Then, you push the changes onto your forked remote.
+- Now, you would like to request the owner of the original project to merge your new branch onto the master branch of the repo. For this, you need to issue a _pull request_.
+- If the owner accepts your modifications into the original repo, you can do some cleanup by deleting the new branch both locally and in your forked remote. You can also re-sync the master branches both locally and in Github.
+- To display remote tracking branches: *git branch -a* OR *git branch -r*
+- To issue a pull request:
+  + In Github, go to the branch you want to merge into the original repo.
+  + Click on the "New pull request" button.
+  + [OPTIONAL] Update your commit message and provide additional details in the text field.
+  + Click on the "Create Pull Request" button.
+
+** How to Undo Mistakes With Git Using the Command Line
+[[youtube:lX9hsdsAeTk][Video Link]]
+*** Discard All Local Changes in a File
+- You want to discard all the uncommitted changes in a file and get back the last COMMITTED version of the file.
+- *git restore <filename>*
+- WARNING: Discarding uncommitted local changes cannot be undone!!
+*** Restoring a Deleted File
+- Same command as discarding local changes.
+- *git restore <deleted_filename>*
+*** Discarding Chunks/Lines in a File
+- *git restore -p <filename>*
+  + The -p flag allows you to go down to the "patch" level and address different chunks/pieces of code.
+  + When you run this command, git steps through every chunk of changes that you made and asks you if you would like to discard them.
+*** Discarding All Local Changes
+- Undo everything you've done since the last commit.
+- *git restore .*
+- Again, be careful with this command! You cannot undo the discarding of local changes!
+*** Fixing the Last Commit
+**** Fixing typos in the commit message:
+- *git commit --amend -m "New commit message!"*
+**** Adding a change to the previous commit:
+- First, stage the file/s you would have liked to be a part of the previous commit.
+- Then use the command: *git commit --amend --no-edit*
+- The --no-edit flag will allow you to make the amendment to your commit without changing its commit message.
+**** WARNING: Don't Amend Public Commits
+- Amended commits are actually entirely new commits and the previous commit will no longer be on your current branch.
+- Avoid amending a commit that other developers have based their work on.
+- This is a confusing situation for developers to be in and it’s complicated to recover from.
+- In a nutshell, don't change the commit if someone is basing their current work on it.
+*** What "Rewriting History" Means
+- When you amend a commit, git creates a new commit hash and replaces it with the old commit.
+*** Reverting a Commit in the Middle
+- *git revert <commit_hash>*
+- The 'commit_hash' is the hash of the commit you want to revert.
+- This command opens up your editor before going through.
+  + This is because 'git revert' creates a new commit, and thus you have the option to provide a commit message.
+  + Git gives you a default commit message which references the commit you are reverting.
+*** Resetting to an Old Revision
+- Essentially, we want to go back to an older commit and forget/delete everything that has been committed after it.
+- *git reset --hard <commit_hash>*
+  + The '--hard' option means that no local changes should survive. This gives you a completely clean working copy.
+- *git reset --mixed <commit_has>*
+  + The '--mixed' option maintains all the local changes that were present in the commit you're rolling back from.
+*** Resetting a File to an Old Revision
+- This deals with the situation in which you know a file was good at some point, but not in the current version. So, you want to turn back time just for that single file.
+- *git restore --source <commit_hash> <filename>*
+  + The 'commit_hash' in this case references the committed version of the file you want to go back to.
+*** The Reflog
+- The _Reflog_ is a journal that logs every movement of the HEAD pointer.
+*** Recovering Deleted Commits
+- You may want to do this for example when we rolled back some commits. If you realize that was a mistake, you may start panicking when you realize that those commits you rolled back from were deleted.
+- Don't panick too much though, because we can use the Reflog to get those commits back!
+- To open up the reflog journal: *git reflog*
+  + It's ordered chronologically, so the most recent actions are at the top.
+  + It shows you all the commit hashes that HEAD has pointed to.
+- Once, you find the commit hash you want to go back to, you could do another git reset, but it would probably be a better idea to start a new branch at that specific hash with *git branch <branch_name> <commit_hash>*
+*** Recovering a Deleted Branch
+- Example of when you may need to do this: You think you don't need a feature branch anymore, you (force) delete it (even though there's a commit on the branch that isn't present anywhere else), you notice it was a bad idea, you panic!
+- Using the reflog, find the commit hash before you deleted the branch.
+- Then, *git branch <branch_name> <commit_hash>*
+  + You want to give this new branch the same name as the old one.
+*** Moving a Commit to a New Branch
+- This is useful when you realize you should've created a new branch BEFORE committing.
+- Many teams have a convention that you shouldn't commit to a long-running branch like 'master' or 'develop', those branches should only receive commits by integration (merging or rebasing).
+- Two Steps to solve this:
+  1) Create the new branch
+     - *git branch <branch_name>*
+  2) Cleanup the branch you wrongly committed to
+     - *git reset HEAD~1 --hard*
+     - NOTE: 'HEAD~1' means 1 commit behind what HEAD is currently pointing to.
+*** Moving a Commit to a Different Branch
+- Slightly different problem. You still want to move the commit to a different branch, only this time, the branch in question ALREADY exists.
+- Steps:
+  1) Checkout the branch where you want the commit to be moved to:
+     - *git checkout <branch_name>*
+  2) Move that commit to this branch using _git cherry-pick_:
+     - *git cherry-pick <commit_hash>*
+  3) Cleanup the branch where the commit was originally:
+     - *git checkout <other_branch_name>*
+     - *git reset --hard HEAD~1*
+*** Interactive Rebase: An Overview of What You Can Do
+- You can edit old commit messages, delete commits, combine multiple commits into one, split commits, etc.
+*** Interactive Rebase: How It Works in General
+1) How far back do you want to go? What should be the "_base_" commit?
+2) Start the Interactive Rebase session:
+   - *git rebase -i HEAD~3*, for example.
+3) In the editor, only determine which _actions_ you want to perform. Don't change commit data in this step, yet!
+   - NOTICE: Commits are in "reverse" order!
+*** Editing Old Commit Message with Interactive Rebase
+- We've changed old commit messages before using git amend, but that only works when changing the /previous/ commit. If we want to go further back in the commit log, we need to use interactive rebase.
+- Interactive Rebase Steps:
+  1) Determine how far back you want to go in the commit log:
+     - *NOTE: You want to go back to at LEAST the /parent/ commit eg. one commit before the commit you want to edit.*
+  2) Start the Interactive Rebase session:
+     - *git rebase -i <commit_hash>*
+  3) In the editor, edit in the action you want to perform on the desired commit. In this case, replace "pick" with _reword_ on the line of the desired commit hash.
+  4) Save and close the rebase file.
+  5) Edit the commit message in the pop up editor.
+*** Deleting Old Commits with Interactive Rebase
+- Start the interactive rebase session at the parent of the commit you want to delete.
+- Replace "pick" with "_drop_" (action keyword for deleting a commit).
+- Save and close the editor and the commit should be deleted.
+*** Squashing Multiple Commits Into One
+- After moving back to the parent commit and starting the interactive rebase session, markup FIRST commit in the couplet you want to squash with the "_squash_" action keyword.
+- NOTE: When you mark one commit with the squash keyword, the commit directly before it is the one that gets squashed with it.
+  + In terms of the rebase editor, if you mark the commit at line 2 with the squash keyword, the commit that gets squashed with it is the one at line 1.
+- You will then get a pop up editor for entering the commit message to this new, combined commit.
+*** Adding Changes to an Old Commit with Interactive Rebase
+- If you forgot to commit something or simply made a mistake in an old commit, you could simply issue a new commit with the added changes, but this "band-aid commit" can make your commit logs less organized and harder to read.
+- Therefore, you want to go back in time and just add the needed changes to the commit itself.
+- Steps:
+  1) Add the changes to the staging area.
+  2) *git commit --fixup <commit_hash>*
+  3) *git rebase -i <parent_commit_hash> --autosquash*
+     - We don't need to do anything in the rebase editor!
+     - NOTE: The "_fixup_" action keyword combines commits with the line above, similar to "squash".
+*** Splitting/Editing An Old Commit With Interactive Rebase
+- This case deals with splitting one commit into multiple new commits.
+- Lecture only shows how to do this in the Git Tower GUI :(
+*** REMINDER: Don't Rewrite Commits That You Have Already Shared!!
+- Do NOT reqrite commit history that has already been pushed to a remote repository!
+- Use these actions with care: Amending Commits, Rebase, Interactive Rebase, Reset, etc.
+- Use these tools to clean up LOCAL history, BEFORE pushing to a remote.
+
+* ssh
+** What is SSH and Public-Key Cryptography?
+- When you create a key, you breka it into two pieces.
+  + One part functions as a lock.
+  + The other part as a key.
+- You then take the "lock" part and place it on various other machines to idenitfy yourself.
+- Then take the "key" part and keep it to yourself.
+- Now, anywhere that the "lock" is you can prove to that machine that you have the only "key" that fits the lock and makes it turn.
+- In public-key cryptography terminology, the "lock" we've been referring to is called a _public key_ and the "key" we've been referring to is called a _private key_.
+** Generating SSH Public and Private Keys
+*** Generating a Key
+- Run the command *ssh-keygen* to generate the key.
+- The public key will be stored in a file called "id_rsa.pub" in your home directories .ssh folder.
+- The private key will be stored in a file called "id_rsa" in the same folder.
+*** Passphrases (And Other General Security Features of SSH Keys)
+- After running the ssh-keygen command, you have the option to have a passphrase for your RSA key.
+- You don't need to have a passphrase, but the advantage to having one is that if someone is able to read your private key, they are unable to use it.
+- Security Tips When Using SSH Keys
+  1) Don't just use the same key across all machines and users. Generate each user on each machine (that needs to do this kind of thing) its own key pair. This will let you keep fine grained control on what is able to ssh where.
+  2) When adding the key to your authorized_keys file, you can lock it down to only be able to run a specific command, or use it only from a specific host.
+     - Look at the ssh manpage and search for "command=" and "from="
+     - Ex) from="1.2.3.4",command="/path/to/executable argument" ssh-rsa key name
+** Saving Public SSH Key on the Client System
+- From within the client system you need to create a .ssh folder in the home directory.
+- Then in the .ssh folder, create a file named "authorized_keys".
+- Paste the contents of the public key file (id_rsa.pub) in this file.
+** Using SSH Agent to Login Without Passwords
+- An agent allows us to have password protected SSH keys within our system, but doesn't ask for that password when logging into client systems if you have already entered that password once in your local system.
+- Adding a key to the SSH Agent
+  + *ssh-add <path_to_private_key>*
+  + REMEMBER: The path to the private key is stored in ~/.ssh
+- Listing the Identities Stored in the SSH Agent
+  + *ssh-add -l*
+** How to Pipe Authentication Keys From Local to Client System
+- An easy way to see if you have your ssh keys set up properly:
+  + ssh git@github.com
+- When you're using the ssh agent at your local machine AND you trust the machine you're hooping to to send the authentication key through it, then you can edit your local copy of _~/.ssh/config_
+  + Ex)
+        Host *.cs.rutgers.edu
+          User osn4
+          ForwardAgent yes
+  + The "ForwardAgent yes" part of the config file is what allows your local machine to send private keys through to client machines.
+
+* Docker
+** Running Docker on a Mac
+- This would work essentially the same way as on a Windows machine.
+- Docker Desktop (install the MacOS version) would create a Linux virtual machine behind the scenes.
+- That Linux VM will also have Docker running inside of it.
+- And VS Code knows how to interact with that VM in a way that is explicitly defined in the _Dockerfile_.
+** Dockerfile
+- Defines a specific configuration of a Linux OS.
+- If you want to "save" the status of a Linux VM you're working on, you can't just hit a save button, but rather you would modify the Dockerfile to include the changes you would like to see the next time you create that specific Linux VM.

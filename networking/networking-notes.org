@@ -1,0 +1,128 @@
+#+TITLE: Networking Notes
+
+* Computer Networking Course - Network Engineering [CompTIA Network+ Exam Prep]
+[[youtube:qiQR5rTSshw][Video Link]]
+** Intro to Network Devices (Part I)
+*** OSI Model
+- The _Open Systems Interconnection (OSI) Model_ was developed as a way to help disparate computing systems communicate with each other.
+- The 7 OSI Model Layers are as follows:
+  + _Layer 1: Physical_
+  + _Layer 2: Data Link_
+  + _Layer 3: Network_
+  + _Layer 4: Transport_
+  + _Layer 5: Session_
+  + _Layer 6: Presentation_
+  + _Layer 7: Application_
+- Most devices do function at more than one level of the OSI reference model.
+- When it comes time to determine where they fit into the model, you must first determine the highest level at which they operate.
+- To do that, you must know what they do and how that relates to the OSI model.
+** Layer 1 Devices
+*** Analog Modem
+- The word _modem_ is actually derived from a contraction of modulator/demodulator.
+  + Modems were developed to take the digital signal coming from a digital node and convert it to an analog signal (modulating the signal) to be placed on the wire.
+  + In return, it would accept an analog signal from the wire and convert it (demodulating the signal) to a digital signal that the node could understand.
+*** Hub
+
+
+* DNS
+
+
+* HTTP
+** HTTP Cookies Crash Course
+[[youtube:sovAIX4doOE][Video Link]]
+***
+
+
+* Introduction to Packet Analysis
+** Network Protocols (Part 1)
+*** OSI Model
+- Conceptually, responsibility for netowork communications is divided among seven services or "layers".
+- Network communications are split into small packages called "packets".
+- Each layer is responsible for moving each packet a portion of the total journey.
+- The 7 Layers (top-to-bottom):
+  + Application -> Presentation -> Session -> Transport -> Network -> Data Link -> Physical
+- A _protocol_ is an implementation of a service that is responsible for one or more of the layers.
+  + Some protocols combine multiple layers into a single service.
+  + _HTTP_ has a mechanism to transport application messages (application layer) plus track user sessions (session layer) and uses GZIP for compression (presentation layer).
+- The OSI model may struggle to map network layers precisely to some applciation stacks.
+  + An alternative model called the _TCP/IP Model_ may map better to applications that utilizes TCP and IP for transport and network layers respectively.
+  + TCP/IP Layers (top-to-bottom):
+    - Application -> Transport -> Network -> Link
+*** TCP/IP Network Packet
+**** Packet Structure
+- Each "layer" (protocol) places information it needs at the front of the packet.
+- The "front of the packet" is relative; from the point of view of the protocol.
+**** Layer 1: Physical
+- The Physical Layer carries the signal. _Radio waves_ and _copper wires_ are common media.
+- The _RJ-45 Protocol_ specifies the construction of Ethernet cables.
+- For _Wi-Fi_, radio waves are transmitted in the 2.4 GHz (12 cm) UHF or 5 GHz (6 cm) SHF ISM radio bands.
+**** Layer 2: Logical Link
+- The Logical Link packet structure varies between Ethernet, 802.11, etc. but contains the _MAC addresses_.
+  + MAC address is the address on the host's network card.
+  + When network cards are manufactured, they are given a unique serial number.
+- MAC Addresses
+  + [[~/org/img/mac-addr.png]]
+  + The first 24 bits (6 hex digits) is the _Organizationally Unique Identifier (OUI)_. This OUI is globally unique and identifies the specific company which manufactured the network card.
+  + The last 24 bits (6 hex digits) is the vendor assigned, card number.
+- _Switches_ and _hosts_ uses MAC addresses to reference network adapters.
+- Ethernet Packet Example:
+  + [[~/org/img/ethernet-packet.png]]
+**** Layer 3: Network
+***** Internet Protocol (IP)
+- The IP packet contains the IP addresses, time-to-live, and fragmentation indicators.
+- _Routers_ use IP addresses to route packages across networks.
+***** IP Packet
+- [[~/org/img/ip-packet.png]]
+- The IP packet format:
+
+-------------------------------------------------------------------------
+| 4-bit   | 4-bit header |8-bit "type | 16-bit total length (in bytes)  |
+| version | length       |of service" |                                 |
+-------------------------------------------------------------------------
+| 16-bit identification               | 3-bit | 13-bit fragment offset  |
+|                                     | flag  |                         |
+-------------------------------------------------------------------------
+| 8-bit "time to live"   | 8-bit      |  16-bit header checksum         |
+|                        | protocol   |                                 |
+-------------------------------------------------------------------------
+|         32-bit source IP address                                      |
+-------------------------------------------------------------------------
+|         32-bit destination IP address                                 |
+-------------------------------------------------------------------------
+|          options (if any)                                             |
+-------------------------------------------------------------------------
+|                                                                       |
+|                       data                                            |
+|                                                                       |
+-------------------------------------------------------------------------
+
+- "version" Field
+  + For IPv4 this will be 4.
+  + For IPv6 it will be 6.
+- "ihl" Field
+  + _Internet Header Length_: How long is the IP packet, not counting the data.
+  + Represented in "words" (a word is 32 bits or 4 bytes).
+    - This means if we have an IPv4 packet with no options, the first byte we'd see would be "45". 4 for the version and 5 because the IP packet is 5 words long.
+- "type of service" Field
+- "total length" Field
+  + Length of the data plus the length of ihl.
+- "identification" Field
+  + The "name" (it's really a number) of this specific packet.
+- "flags" Field
+  + There are only 3 different flags.
+  + Tells us whether the packet is being fragmented or not.
+    - In the case that it is fragmented, it will tell us whether or not this is the "last" packet.
+- "fragment offset" Field
+  + The fragmentation offset value for the first fragment is always 0. The field is 13 bits wide, so the offset can be from 0 to 8191.
+  + Specifies the offset of a particular fragment relative to the beginning of the original unfragmented IP datagram.
+- "time to live" Field
+  + How many hops the packet can make in a network before a router gives up and drops it.
+  + Everytime the packets passes through a router, the router decrements this field by 1.
+  + In Linux it's usually 64, Windows is usually 128.
+- "protocol" Field
+  + What protocol is being "carried". Usually set to TCP.
+- "padding" Field
+  + Is there just to make sure that we end on a 32-bit boundary.
+
+
+* Torrent

@@ -1,0 +1,113 @@
+#+TITLE: Arch Linux Notes
+
+* Arch Linux Installation
+** Wifi
+*** Networking Types
+- Wired or Wireless
+  - Wired is usually straightforward to set up.
+  - Wireless: different security solutions.
+- Fix or Dynamic IP
+  - Dynamic IP gets an automatic address from a DHCP server (needs DHCP client running).
+  - Fix IP: the user needs to set it up.
+*** Wired Network
+- Use "ip link" command to list all network interfaces.
+  - In case of a wired connection, possibly DHCP client is running already and therefore has an IP (check if this is the case in systemd by running "systemctl list-units | grep dhcp").
+  - You can start it by running "systemctl start dhcpcd@interface". The "interface" in the command can be found using the "ip link" command.
+- Check the adapter properties using the "ip address" command.
+  - You can check the connection with the "ping" command.
+  - To find acutual IP addresses look for the "inet" row in the command output.
+*** Wireless Network
+- NOTE: In July 2020, the Arch Installer removed netctl and wifi-menu.
+- To install Arch Linux using a wifi connection, you should now use the *iwctl* command. Simply type out =iwctl= in the terminal to start the "iwd" prompt.
+- Step 1: Find the name of your wireless adapter
+  + Command: _device list_
+- Step 2: Scan the available wireless networks
+  + Command: _station <wireless_adapter_name> scan_
+  + NOTE: wireless_adapter_name is the name found in Step 1
+  + This command starts scanning but doesn't output the names of the available networks, for that, go to Step 3.
+- Step 3: Find the name of your network
+  + Command: _station <wireless_adapter_name> get-networks_
+- Step 4: Connect to the Network
+  + Command: _station <wireless_adapter_name> connect <network_name>_
+- Step 5: Enter password and "exit" the iwd prompt
+*** Regarding Issues with iwd
+- If your wireless device is not powered on, run the command =rfkill unblock wlan=.
+- To make sure the device is unblocked, you can run =rfkill list all=
+*** Install the iwd Package While arch-chroot's in the System
+- Make sure to run =pacman -S iwd= while you're arch-chroot'd into the new system.
+- Also make sure to enable the iwd service with =systemctl enable iwd.service=
+- If you don't do this, you won't be able to connect to your wifi network after rebooting the system.
+*** Configure iwd
+- Setup DNS capabilities using the built-in _systemd-resolved_ package with =systemctl enable systemd-resolved.service=
+- Add the following lines to the _/etc/iwd/main.conf_ file:
+#+begin_src text
+[General]
+EnableNetworkConfiguration=true
+
+[Network]
+NameResolvingService=systemd
+#+end_src
+
+* Arch Linux Maintenance
+** Failed systemd Services
+- Command to check for failed services:
+  + *systemctl --failed*
+- Command to Check Lock Files:
+  + *sudo journalctl -p 3 -xb*
+** Update the System Regularly
+- Command to use yay to update packages from BOTH main repos and AUR
+  + *yay -Syu*
+** Check the pacman Cache
+- The _pacman cache_ is the cache where packages are STORED whether or not they were installed.
+- Command to delete cached packages that are NOT currently installed in the system:
+  + *sudo pacman -Sc*
+  + For the AUR: *yay -Sc*
+- Command to delete ALL packages that are in the cache regardless of whether they're installed or not
+  + *sudo pacman -Scc*
+  + *yay -Scc*
+** Removing Unwanted Dependencies
+- *yay -Yc*
+** Removing Orphan (Unused) Packages
+- Command to check if there are orphan packages in the system:
+  + *pacman -Qtdq*
+- Command to delete all orphan packages in the system
+  + *sudo pacman -Rns $(pacman -Qtdq)*
+** Cleaning Up Directories That Might be Taking Up Space
+*** ~/.cache/
+- We can use the _du (disk usage)_ command to check how much space a directory is taking up.
+- Command to check how much space our home .cache diretcory is taking up:
+  + *du -sh ~/.cache/*
+  + -s: Summarize
+  + -h: Human-Readable
+- Delete the CONTENTS of the .cache directory:
+  + *rm -rf ~/.cache/**
+*** ~/.config
+- If this directory is getting bloated, delete any configuration folders that you don't need.
+*** /var/log/journal
+- Contains logs that can be useful if you need to troubleshoot your machine.
+- But if you don't clean it up regularly, it can take up a lot of space.
+- Command to clean up the journal directory in such a way that only the logs from the past 2 weeks remain:
+  + *sudo journalctl --vacuum-time=2weeks*
+** Refreshing the mirrorlist
+- reflector command to refresh your mirrorlist:
+  + *sudo reflector -c 'United States' -a 6 --sort rate --save /etc/pacman.d/mirrorlist*
+
+* What is UEFI and How to Use It
+- How to know if you're booted in UEFI
+  - RUN COMMAND: ls /sys/firmware/efi/efivars
+  - If ls returns stuff, you're in UEFI
+
+* youtube-dl
+** Basic Downloading
+- *youtube-dl <URL>*
+  + This places the downloaded video in your current working directory.
+- Listing Available Formats
+  + *youtube-dl -F <URL>*
+    - This hunts down the video and lists all of the available formats (and their format codes) that you could specify for downloading it.
+- Downloading With a Specific Format
+  + *youtube-dl -f <FORMAT_CODE> <URL>*
+- Downloading Playlists
+  + *youtube-dl <PLAYLIST_URL>*
+- Downloading an ENTIRE CHANNEL
+  + *youtube-dl <CHANNEL_URL>*
+

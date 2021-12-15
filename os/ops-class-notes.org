@@ -1,0 +1,32 @@
+#+TITLE: ops-class.org Notes
+#+DESCRIPTION: My notes for the OS course found at ops-class.org
+
+* Lecture Notes
+
+
+* Assignments
+** ASST0
+*** Configure the OS/161 Kernel
+- The kernel sources for OS/161 are found at =~/src/os161/kern/=.
+- The configuration sources are found at =/kern/conf/=.
+  + A configuration script _config_.
+  + A base configuration file _conf.kern_. This file determines what source files get included in your kernel build, so if you add sources to the kernel you’ll need to add them to conf.kern as well.
+  + Example configurations (GENERIC, DUMBVM, etc).
+- To configure a kernel with one of the configurations, simply run =./config <configuration>=
+*** Build the OS/161 Kernel
+- After configuring the kernel, we should have a directory in which to build it.
+- This directory is at =~/src/os161/compile/<conf_name>=.
+- Three steps to build a kernel:
+  1) Building the dependencies (bmake depend)
+  2) Building the kernel (bmake)
+  3) Installing the kernel (bmake install)
+- We use bmake instead of make because OS/161 sources use BSD make.
+- If these commands run successfully, we should have a new kernel in the =~/root/= directory.
+*** Configuring sys161
+- OS/161 kernels are built to be run by a special-purpose simulator called sys161, or System/161.
+- We are not expected to modify sys161 but we do have to configure it by specifying the number of CPU cores, the amount of memory, and the number of disk drives.
+  + This can be modified in the =~/root/sys161.conf= file.
+*** Running a Kernel
+- To run the kernel we just built, run the command: =sys161 kernel=
+
+* Exam Review

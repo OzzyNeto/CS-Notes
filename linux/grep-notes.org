@@ -1,0 +1,68 @@
+#+TITLE: grep Notes
+
+* grep
+** Usage
+- Searching for a specific string in a file
+  - grep "search_string" [filename]
+- Searching for a specific string in a directory
+  - Use the * wildcard
+  - grep "search_string" ./*
+- Searching for a specific string in all .txt files in a directory
+  - grep "search_string" ./*.txt
+- Searching for a string in a directory and all sub-directories
+  - We need to perform a _recursive search_. Be careful when using this; it might that a LONG time.
+  - We do this using the -r option, and we don't need to use the * wildcard when specifying the starting directory.
+  - grep -r "search_string" [start/dir/]
+** Options
+- w
+  - Returns only the strings that EXACTLY MATCH the search string.
+- i
+  - Makes grep NOT case sensitive. The command is case sensitive by default.
+- n
+  - Outputs the line number of the string matches.
+- B [num_lines]
+  - Outputs num_lines lines BEFORE the match (also outputs the match line itself).
+- A [num_lines]
+  - Same as -B, only the lines are AFTER the match.
+- C [num_lines]
+  - Prints num_lines BEFORE AND AFTER the match.
+  - Think of this as printing the CONTEXT around the match.
+- r
+  - Recurisive Search. Allows us to search through a starting directory and all its sub-directories.
+- l
+  - Lists what files contain a match when trying to match in a directory.
+- c
+  - Does the same thing as the -l option, but also prints how many matches were found in each file.
+- P
+  - Allows for the usage of Perl compatible regular expressions in search strings. This only works on Linux machines.
+  - NOTE: MacOS uses the BSD version of grep, while Linux uses the GNU version.
+** Practical Use Cases
+- Search our history for latest git commits
+  - history | grep "git commit"
+- Regular Expressions Searches
+  - grep uses POSIX RE by default, which is unlike the regular expressions used in Python and other languages.
+  - Use the -P option for Perl compatible regular expressions to work.
+  - Ex) Searching Files for Phone Numbers
+    - grep "...-...-...." names.txt
+** Regular Expressions
+- A great file to use to work on regex skills is the dictionary found on any Linux system at /usr/share/dict/
+- Another file: /etc/passwd
+*** Basic Regex
+- *
+  - Matches zero or more times the preceding character.
+- .
+  - Matches 1 of any character.
+*** Character Classes
+- Allows us to match a "class" of characters.
+- Use brackets [] to specificy them.
+- It matches on just one element within the class, but it can choose between any of them.
+- Ex) Lowercase Letters: [a-z]  OR  [ [:lower:]]
+- Ex) Digits: [0-9]  OR  [ [:digit:]]
+- Ex) Alphabetic Characters: [a-zA-Z]  OR  [ [:alpha:]]
+- Ex) [ [:space:]] matches any whitespace
+**** Abbreviations
+- These are not standard in GNU grep, but are Perl regex abbreviatios (use -P option for them to work in GNU grep).
+- \d = [0-9]
+- \w = [a-zA-Z0-9_]
+- \s = [ \t\n\r\f] ---> Space
+- Negation of these character classes (Just use capital letter instead): \D, \W, \S

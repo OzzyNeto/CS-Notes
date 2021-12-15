@@ -1,0 +1,120 @@
+#+TITLE: Shell Scripting Notes
+
+* Shell Scripting
+** Intro to Linux Shell Scripting Series (Fall 2012)
+*** Shell Basics
+[[youtube:ak6tNsm0Frw][Video Link]]
+**** Pipes and Redirection
+- Remember that we can redirect stdout to a file of our choosing using _>_ and _>>_. Where > overrites the file and >> appoends to it.
+- Redirecting stderr
+  + By default, > and >> redirection stdout, but we can change that to make them redirect stderr.
+  + =<command> 2> <file>=
+    - The _2>_ operator makes it so stderr will get redirected into the file instead of stdout.
+    - Note that the 1> operator would redirect stdout, thus we simply use > for that case.
+  + =<command> &> <file>=
+    - This redirects BOTH stdout and stderr to the file.
+- Pipes (|)
+  + The redirection operators always send you to a file (you can only redirect to a file). But the pipe operator redirects you to another /program/.
+  + This is a very powerful feature of UNIX because it allows you to chain many small programs together (using pipes) into a much more complex operation.
+  + Piping sterr
+    - Pipes only work with stdout, so if you want to pipe the stderr of some program into another program, you first need to switch stdout with stderr.
+    - You can flip stdout and stderr with: =2>&1=
+    - Example: ps -Y 2>&1 | sort
+**** Shells
+- A _shell_ is essentially the interface between you and the OS. It's  a low-level program that does mnay things including generating a shell prompt, running commands, handling piping, etc.
+**** Background Commands
+- =<command> &=
+  + This runs the command in the background.
+- =fg <job_number>=
+  + Brings a specific job (command) back to the foreground.
+- =jobs=
+  + Tells you what jobs are running in the background and displays their corresponding job number.
+- =CTRL-z=
+  + This keybinding STOPS a running foreground process and puts it in the jobs queue.
+  + This is useful if you're in vim with many files open and you want to go back to the command line without having to close all the files.
+- =kill %<job_number>=
+  + Kills a process using its job number (as opposed to using its pid).
+**** Command History
+- =CTRL-r=
+  + Lets you reverse search through your history of commands.
+- =history=
+  + Lists all of the commands you've run (limited by your shell's history limit).
+- =history -c=
+  + Clears the shell's history.
+**** Environment Variables
+- =env=
+  + Prints out important environment variables and their values.
+- These environment variables get initialized when you login to your system.
+*** Shell Scripting
+[[youtube:9m7dXuihMWE][Video Link]]
+**** Shebang
+- The first line of all BASH scripts. Whatever program is specified in the shebang is the progam that runs the commands specified in the script.
+- =#!/bin/bash=
+  + The standard BASH shebang.
+**** File Extension and Executable Privilege
+- BASH script file extension: =.sh=
+- =chmod +x <script>=
+  + After creating a script, run this command to make it executable.
+**** Script with Arguments
+- Argument =$0= is the name of the script, =$1= is the argument given directly after that (the first "true" argument), and so on.
+- The special argument =$*= expands to ALL arguments passed to the script.
+- =$@= is equivalent to $*, but ="$@"= exapnds to all arguments while preserving whitespace.
+**** if Statements
+- Example: Check if we have a bashrc file
+#+begin_src sh
+#!/bin/bash
+
+if [[ -f .bashrc ]]; then
+    echo TRUE
+else
+    echo FALSE
+fi
+#+end_src
+**** for Loops
+- Example: Printing out all files in a directory
+#+begin_src sh
+#!/bin/bash
+
+for f in *; do
+    echo $f
+done
+#+end_src
+**** Functions
+- Example: Defining a Function, Using Arguments, and Calling it
+#+begin_src sh
+#!/bin/bash
+
+foo() {
+    echo "Hello" $1 # The $1 represents the first argument passed to this function
+}
+
+foo bar # Calls the foo() function with argument "bar"
+foo "$@" # Calls the foo() function with ALL given arguments
+#+end_src
+**** Variables
+- Variables are defined like so: =<var_name>=<value>=
+- If the value of the variable has whitespace in it, used double quotes.
+- If you want to pass your variable to a function, you must also use double quotes.
+  + Example: foo "$var"
+- In general, try to ALWAYS use double quotes when defining/passing variables because they get expanded and tokenized.
+**** Command Substitution
+- Allows you to store the output of a command within a variable.
+- Example: Storing ps output in a variable
+#+begin_src sh
+#!/bin/bash
+
+var=$(ps -AH)
+echo $var
+#+end_src
+**** Arrays
+- Example: Creating an Array, Appending to it, and Printing its Contents
+#+begin_src sh
+#!/bin/bash
+
+var=(a b c)
+var+=("d e")
+
+for i in "${var[@]}"; do
+    echo $i
+done
+#+end_src

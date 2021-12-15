@@ -1,0 +1,15 @@
+#+TITLE: Linux File System Notes
+
+* Tarballs - Archive and Compress Folders
+** Creating a Tarball
++ tar -czvf <tarball-name>.tar.gz <folder-to-compress>
+  - c: Create
+  - z: Compress with gzip
+  - v: Verbose. Tell us what's going on with the process.
+  - f: Allows us to specify file name
+** List Items in a Tarball
+- tar --list -f <tarball-name>.tar.gz
+** Extract a Tarball
+- tar -xzvf <tarball-name>.tar.gz
+  + x: Extract
+  + z: Uncompress with gzip

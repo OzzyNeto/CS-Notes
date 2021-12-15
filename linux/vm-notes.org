@@ -1,0 +1,14 @@
+#+TITLE: Virtual Machines Notes
+
+* Virtual Machines
+** Virt-Manager
+*** Packages Needed
+1) qemu
+2) libvirt
+3) ebtables
+4) virt-manager
+*** Enable and Start the libvirtd Daemon
+- sudo systemctl enable libvirtd
+- sudo systemctl start libvirtd
+*** Add Yourself to the libvirt Group
+- sudo usermod -G libvirt -a <your_username>

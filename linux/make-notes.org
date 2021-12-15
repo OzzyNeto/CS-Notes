@@ -1,0 +1,92 @@
+#+TITLE: make Notes
+
+* make
+** Tutorial: GNU make and Makefile
+[[youtube:Lyp36ku7D0A][Video Link]]
+*** Naming and Basics
+- The convention is to always use the name 'Makefile'.
+- When make is called it searches the current directory for files named 'Makefile' and then for files named 'makefile'.
+- You can think about Makefiles as a way to write recipes for creating files.
+- A cool thing about make is that it compiles the bare minimum number or files needed in order to change the actual file you're trying to create.
+  + In other words, make doesn't do any work that it doesn't have to, which is great if you are trying to compile a program with many dependencies.
+*** Formatting
+- The main part of the Makefile consists of a series of _targets_.
+  + The targets are always named after what file we're trying to create, followed by a colon, followed by whatever dependencies the target has.
+  + A target can also have no dependencies.
+  + <target_name>: <dependency1> <dependency2> ... <dependencyN>
+- After the target declaration and listing its dependencies, you go down a line, press TAB, and then specify all the _commands_ that need to be run in order to create the target using its dependencies.
+  + Note that you CANNOT USE SPACES, you need to use TAB.
+  + Note that you can only specify ONE command per line.
+- Example: A simple Makefile that creates a file
+#+begin_src makefile
+myfile:
+		touch myfile
+#+end_src
+*** Running a Makefile
+- You DO NOT run a Makefile in the same way that you run a bash script or a C executable (./my-script).
+- Instead you simply call "make" from within the directory that your Makefile is in. Then the make tool finds and runs your Makefile.
+- If you simply run "make", then the Makefile runs only the first target.
+- But, you can also specify a target for the Makefile to run, for example "make clean".
+*** all and clean Targets
+- There are two targets that you should ALWAYS have in your Makefile: all and clean.
+- all
+  + It builds any targets that you should normally build.
+  + Doesn't have any commands listed in its body. All it has is "dependencies" which are actually targets in the Makefile that should be built by default.
+  + all should be the FIRST target listed in the Makefile.
+- clean
+  + Doesn't have any dependencies, but does have a command/s.
+  + It should call whatever commands are necessary to undo everything that the 'all' target did.
+  + It essentially "cleans" the working directory.
+- Example: Previous example with 'all' and 'clean' targets
+#+begin_src makefile
+all: myfile
+
+myfile:
+		touch myfile
+
+clean:
+		rm -f myfile
+#+end_src
+*** Dependencies
+- Sometimes a target you want to build depends on other targets having already been built. In these cases, you must specify the dependency targets in your target's dependency list.
+- Example: Makefile with Dependencies
+#+begin_src makefile
+all: myfile2
+
+myfile:
+		touch myfile
+
+myotherfile:
+		touch myotherfile
+
+myfile2: myfile myotherfile
+		cat myfile myotherfile > myfile2
+
+clean:
+		rm -f myfile
+		rm -f myotherfile
+		rm -f myfile2
+#+end_src
+- Notice in this example that in order for the command in the 'myfile2' target to run properly, the other targets must have been built in the first place. Thus, we list those other targets as dependencies of our 'myfile2' target.
+  + make will first build the dependencies and then build the original target.
+- Also notice that our 'all' target builds 'myfile2', thus if we simply run "make" in the command line, it will automatically build 'myfile2'.
+*** Makefile Variables
+- RM variable for removing files
+  + Instead of having to type out "rm -f" every time you want to delete a file in a Makefile, you can use the built-in variable =$(RM)= which resolves to the same thing.
+  + Example: $(RM) myfile
+    - This resolves to the same thing as "rm -f myfile".
+- Defining/Redefining Variables
+  + To define a varible in a Makefile, you must define it at the top of the file before any target definitions.
+  + Syntax for variable definition
+    - <var_name>=<var_value>
+    - Ex: foo=ls -l
+  + You can also redefine built-in variables.
+    - For example, if we wanted to redefine RM to mean simply "rm" and not the default value of "rm -f", we would write: RM=rm
+- Using variables is key because it makes your Makefile machine independent.
+  + For example, the =$(CC)= variable gets resolved as the default c compiler on whatever machine is running the Makefile.
+  + It's important to use this variable because while your machine may run gcc by default, someone's else's may only have clang installed.
+  + If you want to force a specific C compiler to be used, you could simply redefine this variable, 'CC=gcc' for example.
+- By convetion, variable names should be all caps.
+- There is a variable which refers to the target of the current rule you're in: =$@=
+- Variable which refers to the entire list of dependencies of the current rule you're in: =$^=
+

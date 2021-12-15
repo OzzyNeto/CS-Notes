@@ -1,0 +1,44 @@
+#+TITLE: SSH Notes
+
+* ssh
+** What is SSH and Public-Key Cryptography?
+- When you create a key, you breka it into two pieces.
+  + One part functions as a lock.
+  + The other part as a key.
+- You then take the "lock" part and place it on various other machines to idenitfy yourself.
+- Then take the "key" part and keep it to yourself.
+- Now, anywhere that the "lock" is you can prove to that machine that you have the only "key" that fits the lock and makes it turn.
+- In public-key cryptography terminology, the "lock" we've been referring to is called a _public key_ and the "key" we've been referring to is called a _private key_.
+** Generating SSH Public and Private Keys
+*** Generating a Key
+- Run the command *ssh-keygen* to generate the key.
+- The public key will be stored in a file called "id_rsa.pub" in your home directories .ssh folder.
+- The private key will be stored in a file called "id_rsa" in the same folder.
+*** Passphrases (And Other General Security Features of SSH Keys)
+- After running the ssh-keygen command, you have the option to have a passphrase for your RSA key.
+- You don't need to have a passphrase, but the advantage to having one is that if someone is able to read your private key, they are unable to use it.
+- Security Tips When Using SSH Keys
+  1) Don't just use the same key across all machines and users. Generate each user on each machine (that needs to do this kind of thing) its own key pair. This will let you keep fine grained control on what is able to ssh where.
+  2) When adding the key to your authorized_keys file, you can lock it down to only be able to run a specific command, or use it only from a specific host.
+     - Look at the ssh manpage and search for "command=" and "from="
+     - Ex) from="1.2.3.4",command="/path/to/executable argument" ssh-rsa key name
+** Saving Public SSH Key on the Client System
+- From within the client system you need to create a .ssh folder in the home directory.
+- Then in the .ssh folder, create a file named "authorized_keys".
+- Paste the contents of the public key file (id_rsa.pub) in this file.
+** Using SSH Agent to Login Without Passwords
+- An agent allows us to have password protected SSH keys within our system, but doesn't ask for that password when logging into client systems if you have already entered that password once in your local system.
+- Adding a key to the SSH Agent
+  + *ssh-add <path_to_private_key>*
+  + REMEMBER: The path to the private key is stored in ~/.ssh
+- Listing the Identities Stored in the SSH Agent
+  + *ssh-add -l*
+** How to Pipe Authentication Keys From Local to Client System
+- An easy way to see if you have your ssh keys set up properly:
+  + ssh git@github.com
+- When you're using the ssh agent at your local machine AND you trust the machine you're hooping to to send the authentication key through it, then you can edit your local copy of _~/.ssh/config_
+  + Ex)
+        Host *.cs.rutgers.edu
+          User osn4
+          ForwardAgent yes
+  + The "ForwardAgent yes" part of the config file is what allows your local machine to send private keys through to client machines.

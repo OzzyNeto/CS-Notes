@@ -1,0 +1,129 @@
+#+TITLE: Linux Networking Notes
+
+* Linux Networking
+** Intro to Linux Networking Series (Fall 2012)
+*** General Linux Networking
+[[youtube:pIYXsfAoyb4][Video Link]]
+**** Linux Networking Devices
+- In Linux, your network interface is considered a device.
+- To list the current netowrk devices on your system, use the =ip l= command.
+- lo
+  + This is the _loopback device_. It's a special address and device that always refers to yourself.
+- To list the addresses attached to each network device, use the =ip a= command.
+**** Networking Device Naming
+- Ethernet device names start with "en" while wireless device names start with "wl".
+- Example: Ethernet device name and what it all means
+_enp0s10_:
+| | |
+v | |
+en| |   --> ethernet
+  v |
+  p0|   --> bus number (0)
+    v
+    s10 --> slot number (10)
+*** File Transfer Protocols
+[[youtube:g6tloRJL75w][Video Link]]
+**** scp
+- Does the same thing as the cp command, only it does it over SSH. So, it allows you to copy files to and from a remote server.
+- The basic syntax of the command is =scp <source> <target>=, where the source is the file you want to move and the target is where it is going.
+- =scp <local_path> <remote_user>@<remote_host>:<remote_path>=
+  + Copies a file (located at local_path) on your local machine TO a specific path on the remote machine.
+  + Note that by default the remote_path is set to the remote host's $HOME variable.
+- =scp <remote_user>@<remote_host>:<remote_path> <local_path>=
+  + The inverse of the previous command. This command copies a file FROM a remote machine to your local machine.
+**** sftp
+- File transfer protocol over SSH. Very similar to scp, biggest difference being that sftp is interactive (session-based).
+- =sftp <remote_user>@<remote_host>=
+  + Starts an sftp session to transfer files with the remote_host.
+    - You can type _help_ on the sftp prompt in order to list command command names and what they do.
+  + The SFTP shell allows you to run commands on EITHER the local or remote machine. The normal command names run the command on the remote machine, while local commands are distinguished by having an 'l' in front of the typical command name.
+    - For example, 'pwd' would print the working directory of the remote machine, and 'lpwd' woudl print the working directory of the local machine.
+  + If you run '!<command>' in the sftp shell, it's the same as running that specified command on the your local machine.
+  + =get <file1> <file2> ... <fileN>=
+    - Downloads the files from the remote machine to the working directory on your local machine.
+  + =get -r <dir>=
+    - Downloads an entire directory.
+  + =put <file1> <file2> ... <fileN>=
+    - Uploads the files from your local machine to the working directory on the remote machine.
+  + =put -r <dir>=
+    - Uploads an entire directory.
+  + =exit= OR =quit= OR =bye=
+    - Ends the session.
+**** rsync
+- Similar to scp, but it is a lot more efficient. It only uploads/downloads files that are different/have changed.
+- Important Flags
+  + _-a_
+    - Archive mode, maintains the file structure on both remote and local machines.
+  + _-v_
+    - Verbose.
+  + _-z_
+    - Add compression. Makes copies smaller/faster.
+  + _-P_
+    - Shows interactive progress.
+  + _-i_
+    - Shows more information about what's happening to each file.
+  + _-n, --dry-run_
+    - Performs a trial run with no changes made.
+
+
+* cURL
+** Important Options
+- -i
+  + Outputs all the header information.
+- --head
+  + ONLY outputs the header.
+  + -I does the same thing.
+- curl -o <output-file> <resource>
+  + Puts the command output into output-file.
+- curl -O <resource>
+  + Downloads the resource.
+- curl -O --limit-rate 1000B <resource>
+  + Downloads the resource with a limit on the data transfer rate. (1000B is just an example)
+- -L
+  + Follows redirection.
+- -X
+  + Allows you to set the HTTP request function.
+** HTTP Requests
+*** PUT Requests
+- curl -X PUT -d "title=Hello" <http-url>
+*** DELETE Requests
+- curl -X DELETE <http-url>
+** Linux Essentials: cURL Fundamentals
+[[youtube:Xy7fDxz39FM][Video Link]]
+*** Basics
+- _curl_ is a utility that allows you to transfer data to or from a network server using one of its supported protocols.
+- The protocols supported by curl are: HTTP, HTTPS, FTP, FTPS, SFTP, TFTP, telnet, etc.
+- It is a multi-platform tool. Works on Linux, Windows, and MacOS.
+*** Basic Queries
+- =curl <url>=
+  + Returns the contents of the web page at the specified url.
+- =curl -o <file> <url>=
+  + Saves the contents of the web page into the specified file.
+  + Example: curl -o ~/Desktop/hsploit.html https://hsploit.com
+  + To check the accuracy of the command, you can simply open the file using a web browser.
+*** Downloading Files From the Web
+- =curl -o <file> <download_link>=
+  + Downloads the contents at the download_link and saves it into the specified file.
+  + Ex: curl -o ~/Downloads/ubuntuIso.iso https://releases.ubuntu.com/20.04.1/ubuntu-20.04.1-desktop-amd64.iso
+  + Note that the extension of the specified file is VERY important. If you don't give it the right extension, it will save it in the wrong format.
+- =curl -O <download_link>=
+  + Downloads the contents at the download_link into the current directory with the default file name.
+*** HTTP/HTTPS Redirection with curl
+- If an HTTP or HTTPS url is being redirected to a different web page, you need to specify this to curl by using the -L command. If you don't tell curl about the redirection, it will not output anything.
+- =curl -L <url>=
+- Example: HTTP web page that redirects to HTTPS web page
+  + curl -L http://hsploit.com
+*** Querying HTTP Response Headers
+- =curl -I <url>=
+  + This outputs ONLY the repsonse headers.
+*** TLS Handshake with curl
+- =curl -v <url>=
+  + Shows the verbose output of the TLS handshake and other connection details (certificates, etc.)
+*** HTTP POST Requests with curl
+- =curl --data "<post_data>" <url>=
+  + Sends a POST request to the specified url. Notice that the data is wrapped in quotation marks.
+
+* ip
+** Finding your IP Address
+- ip a
+- nmcli -p device show
